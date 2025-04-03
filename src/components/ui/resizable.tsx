@@ -1,7 +1,9 @@
-import { GripVertical } from "lucide-react"
-import * as ResizablePrimitive from "react-resizable-panels"
 
-import { cn } from "@/lib/utils"
+import { DragHandleDots2Icon } from "@radix-ui/react-icons";
+import { GripVertical } from "lucide-react";
+import * as ResizablePrimitive from "react-resizable-panels";
+
+import { cn } from "@/lib/utils";
 
 const ResizablePanelGroup = ({
   className,
@@ -14,16 +16,27 @@ const ResizablePanelGroup = ({
     )}
     {...props}
   />
-)
+);
 
-const ResizablePanel = ResizablePrimitive.Panel
+const ResizablePanel = ({
+  className,
+  ...props
+}: React.ComponentProps<typeof ResizablePrimitive.Panel>) => (
+  <ResizablePrimitive.Panel
+    className={cn(
+      "relative flex h-full w-full flex-col",
+      className
+    )}
+    {...props}
+  />
+);
 
 const ResizableHandle = ({
   withHandle,
   className,
   ...props
 }: React.ComponentProps<typeof ResizablePrimitive.PanelResizeHandle> & {
-  withHandle?: boolean
+  withHandle?: boolean;
 }) => (
   <ResizablePrimitive.PanelResizeHandle
     className={cn(
@@ -38,6 +51,60 @@ const ResizableHandle = ({
       </div>
     )}
   </ResizablePrimitive.PanelResizeHandle>
-)
+);
 
-export { ResizablePanelGroup, ResizablePanel, ResizableHandle }
+// New component for draggable field containers
+const DraggableFieldContainer = ({
+  children,
+  className,
+  onMoveUp,
+  onMoveDown,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & {
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+}) => {
+  return (
+    <div
+      className={cn(
+        "relative border border-dashed border-gray-300 rounded-md p-4 mb-4 group",
+        className
+      )}
+      {...props}
+    >
+      <div className="invisible group-hover:visible absolute -top-3 right-2 flex space-x-1 bg-white px-2 rounded-md shadow-sm">
+        {onMoveUp && (
+          <button
+            type="button"
+            onClick={onMoveUp}
+            className="p-1 rounded hover:bg-gray-100"
+            aria-label="Move up"
+          >
+            ↑
+          </button>
+        )}
+        {onMoveDown && (
+          <button
+            type="button"
+            onClick={onMoveDown}
+            className="p-1 rounded hover:bg-gray-100"
+            aria-label="Move down"
+          >
+            ↓
+          </button>
+        )}
+        <div className="cursor-move p-1 rounded hover:bg-gray-100">
+          <DragHandleDots2Icon className="h-4 w-4 text-gray-500" />
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+};
+
+export {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+  DraggableFieldContainer
+};

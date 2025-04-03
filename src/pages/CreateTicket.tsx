@@ -26,8 +26,15 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
+import { 
+  ResizablePanelGroup, 
+  ResizablePanel, 
+  ResizableHandle,
+  DraggableFieldContainer
+} from "@/components/ui/resizable";
+import { Slider } from "@/components/ui/slider";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Move } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -46,6 +53,14 @@ type CustomField = {
   id: string;
   name: string;
   value: string;
+  width: number; // Width percentage for the field
+};
+
+type FormField = {
+  id: string;
+  type: 'standard' | 'custom';
+  name: string;
+  component: JSX.Element;
 };
 
 const CreateTicket = () => {
@@ -53,6 +68,11 @@ const CreateTicket = () => {
   const [customTypeInput, setCustomTypeInput] = useState("");
   const [customTypes, setCustomTypes] = useState<string[]>([]);
   const [showCustomTypeInput, setShowCustomTypeInput] = useState(false);
+  
+  // Track field order for rearrangement
+  const [formFieldsOrder, setFormFieldsOrder] = useState<string[]>([
+    'title', 'type-priority', 'technicien', 'description'
+  ]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -86,17 +106,22 @@ const CreateTicket = () => {
   };
 
   const addCustomField = () => {
-    setCustomFields([
-      ...customFields,
-      { id: `field-${Date.now()}`, name: "", value: "" },
-    ]);
+    const newField = {
+      id: `field-${Date.now()}`,
+      name: "",
+      value: "",
+      width: 100, // Default to full width
+    };
+    setCustomFields([...customFields, newField]);
+    setFormFieldsOrder([...formFieldsOrder, newField.id]);
   };
 
   const removeCustomField = (id: string) => {
     setCustomFields(customFields.filter(field => field.id !== id));
+    setFormFieldsOrder(formFieldsOrder.filter(fieldId => fieldId !== id));
   };
 
-  const updateCustomField = (id: string, key: "name" | "value", value: string) => {
+  const updateCustomField = (id: string, key: "name" | "value" | "width", value: any) => {
     setCustomFields(
       customFields.map(field =>
         field.id === id ? { ...field, [key]: value } : field
@@ -111,206 +136,270 @@ const CreateTicket = () => {
       setShowCustomTypeInput(false);
     }
   };
+  
+  // Field reordering functions
+  const moveFieldUp = (index: number) => {
+    if (index <= 0) return;
+    const newOrder = [...formFieldsOrder];
+    [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+    setFormFieldsOrder(newOrder);
+  };
+  
+  const moveFieldDown = (index: number) => {
+    if (index >= formFieldsOrder.length - 1) return;
+    const newOrder = [...formFieldsOrder];
+    [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+    setFormFieldsOrder(newOrder);
+  };
+
+  // Generate field components map
+  const fieldComponents: Record<string, JSX.Element> = {
+    'title': (
+      <FormField
+        control={form.control}
+        name="title"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Titre</FormLabel>
+            <FormControl>
+              <Input placeholder="Titre de l'intervention" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    ),
+    'type-priority': (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Type</FormLabel>
+              <div className="space-y-2">
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionnez ou créez un type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="undefined">À définir par le technicien</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                    <SelectItem value="installation">Installation</SelectItem>
+                    <SelectItem value="depannage">Dépannage</SelectItem>
+                    {customTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                    <SelectItem value="custom" onClick={() => setShowCustomTypeInput(true)}>
+                      + Ajouter un nouveau type
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {showCustomTypeInput && (
+                  <div className="flex items-center mt-2 space-x-2">
+                    <Input
+                      value={customTypeInput}
+                      onChange={(e) => setCustomTypeInput(e.target.value)}
+                      placeholder="Nom du nouveau type"
+                      className="flex-1"
+                    />
+                    <Button type="button" size="sm" onClick={addCustomType}>
+                      Ajouter
+                    </Button>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => setShowCustomTypeInput(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="priority"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Priorité</FormLabel>
+              <Select onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez une priorité" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="low">Basse</SelectItem>
+                  <SelectItem value="medium">Moyenne</SelectItem>
+                  <SelectItem value="high">Haute</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    ),
+    'technicien': (
+      <FormField
+        control={form.control}
+        name="technicien"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Technicien assigné</FormLabel>
+            <Select onValueChange={field.onChange}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionnez un technicien" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="jean">Jean Martin</SelectItem>
+                <SelectItem value="sophie">Sophie Dubois</SelectItem>
+                <SelectItem value="pierre">Pierre Durand</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    ),
+    'description': (
+      <FormField
+        control={form.control}
+        name="description"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Description</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Décrivez l'intervention..."
+                className="min-h-[100px]"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    ),
+  };
+
+  // Render form fields in the specified order
+  const renderFormFields = () => {
+    return formFieldsOrder.map((fieldId, index) => {
+      // Handle standard fields
+      if (fieldComponents[fieldId]) {
+        return (
+          <DraggableFieldContainer 
+            key={fieldId}
+            onMoveUp={index > 0 ? () => moveFieldUp(index) : undefined}
+            onMoveDown={index < formFieldsOrder.length - 1 ? () => moveFieldDown(index) : undefined}
+          >
+            {fieldComponents[fieldId]}
+          </DraggableFieldContainer>
+        );
+      }
+      
+      // Handle custom fields
+      const customField = customFields.find(field => field.id === fieldId);
+      if (customField) {
+        return (
+          <DraggableFieldContainer 
+            key={customField.id}
+            className="custom-field"
+            onMoveUp={index > 0 ? () => moveFieldUp(index) : undefined}
+            onMoveDown={index < formFieldsOrder.length - 1 ? () => moveFieldDown(index) : undefined}
+          >
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="text-sm font-medium">Champ personnalisé</h4>
+                <Button 
+                  type="button" 
+                  onClick={() => removeCustomField(customField.id)} 
+                  variant="ghost"
+                  size="sm"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <FormLabel className="text-xs">Nom du champ</FormLabel>
+                  <Input
+                    value={customField.name}
+                    onChange={(e) => updateCustomField(customField.id, "name", e.target.value)}
+                    placeholder="Nom du champ"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <FormLabel className="text-xs">Valeur</FormLabel>
+                  <Input
+                    value={customField.value}
+                    onChange={(e) => updateCustomField(customField.id, "value", e.target.value)}
+                    placeholder="Valeur"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <FormLabel className="text-xs flex justify-between">
+                  Largeur: {customField.width}%
+                </FormLabel>
+                <Slider 
+                  value={[customField.width]} 
+                  min={25} 
+                  max={100} 
+                  step={25} 
+                  className="w-full" 
+                  onValueChange={(value) => updateCustomField(customField.id, "width", value[0])}
+                />
+              </div>
+            </div>
+          </DraggableFieldContainer>
+        );
+      }
+      
+      return null;
+    });
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Nouveau Ticket</h1>
-          <Plus className="h-6 w-6 text-gray-500" />
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="rounded-full"
+            onClick={addCustomField}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Informations du ticket</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Vous pouvez réorganiser les champs en utilisant les flèches, et redimensionner les champs personnalisés avec le curseur.
+            </p>
           </CardHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Titre</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Titre de l'intervention" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Type</FormLabel>
-                        <div className="space-y-2">
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Sélectionnez ou créez un type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="undefined">À définir par le technicien</SelectItem>
-                              <SelectItem value="maintenance">Maintenance</SelectItem>
-                              <SelectItem value="installation">Installation</SelectItem>
-                              <SelectItem value="depannage">Dépannage</SelectItem>
-                              {customTypes.map(type => (
-                                <SelectItem key={type} value={type}>{type}</SelectItem>
-                              ))}
-                              <SelectItem value="custom" onClick={() => setShowCustomTypeInput(true)}>
-                                + Ajouter un nouveau type
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          
-                          {showCustomTypeInput && (
-                            <div className="flex items-center mt-2 space-x-2">
-                              <Input
-                                value={customTypeInput}
-                                onChange={(e) => setCustomTypeInput(e.target.value)}
-                                placeholder="Nom du nouveau type"
-                                className="flex-1"
-                              />
-                              <Button type="button" size="sm" onClick={addCustomType}>
-                                Ajouter
-                              </Button>
-                              <Button 
-                                type="button" 
-                                size="sm" 
-                                variant="ghost" 
-                                onClick={() => setShowCustomTypeInput(false)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="priority"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Priorité</FormLabel>
-                        <Select onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionnez une priorité" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="low">Basse</SelectItem>
-                            <SelectItem value="medium">Moyenne</SelectItem>
-                            <SelectItem value="high">Haute</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="technicien"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Technicien assigné</FormLabel>
-                      <Select onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionnez un technicien" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="jean">Jean Martin</SelectItem>
-                          <SelectItem value="sophie">Sophie Dubois</SelectItem>
-                          <SelectItem value="pierre">Pierre Durand</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Décrivez l'intervention..."
-                          className="min-h-[100px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                {/* Custom Fields Section */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-medium">Champs supplémentaires</h3>
-                    <Button 
-                      type="button" 
-                      onClick={addCustomField} 
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-1"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Ajouter un champ
-                    </Button>
-                  </div>
-                  
-                  {customFields.map((field) => (
-                    <div key={field.id} className="flex flex-col space-y-2 p-3 border rounded-md">
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-medium">Champ personnalisé</h4>
-                        <Button 
-                          type="button" 
-                          onClick={() => removeCustomField(field.id)} 
-                          variant="ghost"
-                          size="sm"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <FormLabel className="text-xs">Nom du champ</FormLabel>
-                          <Input
-                            value={field.name}
-                            onChange={(e) => updateCustomField(field.id, "name", e.target.value)}
-                            placeholder="Nom du champ"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <FormLabel className="text-xs">Valeur</FormLabel>
-                          <Input
-                            value={field.value}
-                            onChange={(e) => updateCustomField(field.id, "value", e.target.value)}
-                            placeholder="Valeur"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {renderFormFields()}
               </CardContent>
               <CardFooter>
                 <Button type="submit" className="w-full md:w-auto">
