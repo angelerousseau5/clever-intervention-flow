@@ -156,7 +156,7 @@ const CreateTicket = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">À définir par le technicien</SelectItem>
+                              <SelectItem value="undefined">À définir par le technicien</SelectItem>
                               <SelectItem value="maintenance">Maintenance</SelectItem>
                               <SelectItem value="installation">Installation</SelectItem>
                               <SelectItem value="depannage">Dépannage</SelectItem>
