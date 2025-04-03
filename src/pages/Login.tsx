@@ -4,23 +4,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Navigation } from "@/components/Navigation";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // TODO: Implement actual login logic
+    // Simulation login logic
     console.log("Login attempt with:", { email });
     
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
+      
+      // Simulate successful login with any credentials
+      localStorage.setItem("loggedIn", "true");
+      localStorage.setItem("companyName", "Entreprise Demo SAS");
+      localStorage.setItem("userEmail", email);
+      
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue sur votre tableau de bord",
+      });
+      
+      // Redirect to dashboard
+      navigate("/dashboard");
     }, 1000);
   };
 
