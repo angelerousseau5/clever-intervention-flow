@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,9 +9,11 @@ export interface Ticket {
   description: string;
   status: string;
   type: string;
+  priority?: string;
   assigned_to: string;
   created_at: string;
   updated_at: string;
+  created_by: string;
 }
 
 export const useTickets = () => {
@@ -73,7 +74,7 @@ export const useTickets = () => {
     }
   };
 
-  const createTicket = async (ticketData: Omit<Ticket, "id" | "created_at" | "updated_at" | "created_by">): Promise<Ticket | null> => {
+  const createTicket = async (ticketData: Partial<Ticket>): Promise<Ticket | null> => {
     try {
       setIsLoading(true);
       if (!user) return null;
@@ -81,6 +82,7 @@ export const useTickets = () => {
       const newTicket = {
         ...ticketData,
         created_by: user.id,
+        status: ticketData.status || "En attente",
       };
 
       const { data, error } = await supabase
