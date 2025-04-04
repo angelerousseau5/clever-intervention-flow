@@ -1,6 +1,4 @@
-
-import { DragHandleDots2Icon } from "@radix-ui/react-icons";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Move } from "lucide-react";
 import * as ResizablePrimitive from "react-resizable-panels";
 
 import { cn } from "@/lib/utils";
@@ -94,7 +92,7 @@ const DraggableFieldContainer = ({
           </button>
         )}
         <div className="cursor-move p-1 rounded hover:bg-gray-100">
-          <DragHandleDots2Icon className="h-4 w-4 text-gray-500" />
+          <Move className="h-4 w-4 text-gray-500" />
         </div>
       </div>
       {children}
