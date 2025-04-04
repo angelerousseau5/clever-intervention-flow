@@ -19,12 +19,18 @@ export interface Ticket {
 
 export const useTickets = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
   const getTickets = async (): Promise<Ticket[]> => {
     try {
       setIsLoading(true);
-      if (!user) return [];
+      setError(null);
+      
+      if (!user) {
+        console.log("Utilisateur non connecté");
+        return [];
+      }
 
       const { data, error } = await supabase
         .from('tickets')
@@ -33,9 +39,10 @@ export const useTickets = () => {
 
       if (error) {
         console.error("Erreur lors de la récupération des tickets:", error);
+        setError(error.message);
         toast({
           title: "Erreur",
-          description: "Impossible de récupérer les tickets",
+          description: "Impossible de récupérer les tickets. Veuillez réessayer plus tard.",
           variant: "destructive",
         });
         return [];
@@ -43,7 +50,9 @@ export const useTickets = () => {
 
       return data || [];
     } catch (error) {
-      console.error("Erreur:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      console.error("Erreur lors de la récupération des tickets:", errorMessage);
+      setError(errorMessage);
       return [];
     } finally {
       setIsLoading(false);
@@ -53,6 +62,8 @@ export const useTickets = () => {
   const getTicketById = async (id: string): Promise<Ticket | null> => {
     try {
       setIsLoading(true);
+      setError(null);
+      
       if (!user) return null;
 
       const { data, error } = await supabase
@@ -63,12 +74,15 @@ export const useTickets = () => {
 
       if (error) {
         console.error("Erreur lors de la récupération du ticket:", error);
+        setError(error.message);
         return null;
       }
 
       return data;
     } catch (error) {
-      console.error("Erreur:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      console.error("Erreur:", errorMessage);
+      setError(errorMessage);
       return null;
     } finally {
       setIsLoading(false);
@@ -78,49 +92,49 @@ export const useTickets = () => {
   const createTicket = async (ticketData: Partial<Ticket>): Promise<Ticket | null> => {
     try {
       setIsLoading(true);
+      setError(null);
+      
       if (!user) return null;
 
-      // Ensure required fields are present
+      // Vérification des champs requis
       if (!ticketData.title || !ticketData.type) {
+        const missingFields = [];
+        if (!ticketData.title) missingFields.push("titre");
+        if (!ticketData.type) missingFields.push("type");
+        
+        const errorMsg = `Champs requis manquants: ${missingFields.join(", ")}`;
         toast({
           title: "Erreur",
-          description: "Le titre et le type sont requis",
+          description: errorMsg,
           variant: "destructive",
         });
+        setError(errorMsg);
         return null;
       }
 
+      // Préparer les données à insérer avec les champs requis explicitement définis
       const newTicket = {
-        ...ticketData,
+        title: ticketData.title,
+        type: ticketData.type,
         created_by: user.id,
         status: ticketData.status || "En attente",
+        description: ticketData.description || null,
+        priority: ticketData.priority,
+        assigned_to: ticketData.assigned_to || null,
       };
-
-      // Explicitly type the newTicket to ensure title and type are present
-      const typedTicket: {
-        title: string;
-        type: string;
-        created_by: string;
-        status: string;
-        description?: string | null;
-        priority?: string;
-        assigned_to?: string | null;
-        id?: string;
-        created_at?: string;
-        updated_at?: string;
-      } = newTicket as any; // Type assertion because we've already validated title and type
 
       const { data, error } = await supabase
         .from('tickets')
-        .insert(typedTicket)
+        .insert(newTicket)
         .select()
         .single();
 
       if (error) {
         console.error("Erreur lors de la création du ticket:", error);
+        setError(error.message);
         toast({
           title: "Erreur",
-          description: "Impossible de créer le ticket",
+          description: "Impossible de créer le ticket. Veuillez réessayer plus tard.",
           variant: "destructive",
         });
         return null;
@@ -133,7 +147,9 @@ export const useTickets = () => {
 
       return data;
     } catch (error) {
-      console.error("Erreur:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      console.error("Erreur:", errorMessage);
+      setError(errorMessage);
       return null;
     } finally {
       setIsLoading(false);
@@ -143,6 +159,8 @@ export const useTickets = () => {
   const updateTicket = async (id: string, ticketData: Partial<Ticket>): Promise<Ticket | null> => {
     try {
       setIsLoading(true);
+      setError(null);
+      
       if (!user) return null;
 
       const { data, error } = await supabase
@@ -154,9 +172,10 @@ export const useTickets = () => {
 
       if (error) {
         console.error("Erreur lors de la mise à jour du ticket:", error);
+        setError(error.message);
         toast({
           title: "Erreur",
-          description: "Impossible de mettre à jour le ticket",
+          description: "Impossible de mettre à jour le ticket. Veuillez réessayer plus tard.",
           variant: "destructive",
         });
         return null;
@@ -169,7 +188,9 @@ export const useTickets = () => {
 
       return data;
     } catch (error) {
-      console.error("Erreur:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      console.error("Erreur:", errorMessage);
+      setError(errorMessage);
       return null;
     } finally {
       setIsLoading(false);
@@ -179,6 +200,8 @@ export const useTickets = () => {
   const deleteTicket = async (id: string): Promise<boolean> => {
     try {
       setIsLoading(true);
+      setError(null);
+      
       if (!user) return false;
 
       const { error } = await supabase
@@ -188,9 +211,10 @@ export const useTickets = () => {
 
       if (error) {
         console.error("Erreur lors de la suppression du ticket:", error);
+        setError(error.message);
         toast({
           title: "Erreur",
-          description: "Impossible de supprimer le ticket",
+          description: "Impossible de supprimer le ticket. Veuillez réessayer plus tard.",
           variant: "destructive",
         });
         return false;
@@ -203,7 +227,9 @@ export const useTickets = () => {
 
       return true;
     } catch (error) {
-      console.error("Erreur:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      console.error("Erreur:", errorMessage);
+      setError(errorMessage);
       return false;
     } finally {
       setIsLoading(false);
@@ -212,6 +238,7 @@ export const useTickets = () => {
 
   return {
     isLoading,
+    error,
     getTickets,
     getTicketById,
     createTicket,

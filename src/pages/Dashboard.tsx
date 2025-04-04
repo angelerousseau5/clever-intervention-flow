@@ -4,20 +4,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, CheckCircle, AlertCircle, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useTickets, Ticket } from "@/hooks/useTickets";
+import { toast } from "@/components/ui/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const Dashboard = () => {
-  const { getTickets, isLoading } = useTickets();
+  const { getTickets, isLoading, error } = useTickets();
+  const { user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState({
     total: 0,
     completed: 0,
     pending: 0,
   });
+  const [hasFetched, setHasFetched] = useState(false);
 
-  useEffect(() => {
-    const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
+    if (!user || hasFetched) return;
+    
+    try {
       const data = await getTickets();
       setTickets(data);
       
@@ -28,10 +34,23 @@ const Dashboard = () => {
         completed,
         pending: data.length - completed,
       });
-    };
+      
+      setHasFetched(true);
+    } catch (err) {
+      console.error("Erreur lors de la récupération des tickets:", err);
+      toast({
+        title: "Erreur",
+        description: "Problème lors du chargement des tickets. Veuillez rafraîchir la page.",
+        variant: "destructive",
+      });
+    }
+  }, [getTickets, user, hasFetched]);
 
-    fetchTickets();
-  }, [getTickets]);
+  useEffect(() => {
+    if (user && !hasFetched) {
+      fetchTickets();
+    }
+  }, [user, fetchTickets, hasFetched]);
 
   // Statistiques pour le tableau de bord
   const statsItems = [
@@ -101,6 +120,20 @@ const Dashboard = () => {
             {isLoading ? (
               <div className="flex justify-center py-6">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+              </div>
+            ) : error ? (
+              <div className="text-center py-6 text-red-500">
+                <p>Erreur lors du chargement des tickets</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-2"
+                  onClick={() => {
+                    setHasFetched(false);
+                    fetchTickets();
+                  }}
+                >
+                  Réessayer
+                </Button>
               </div>
             ) : tickets.length === 0 ? (
               <div className="text-center py-6 text-gray-500">
