@@ -46,9 +46,33 @@ const Interventions = () => {
     }
   }, [user, fetchInterventions, refreshTrigger, hasFetched]);
 
-  const handleDownload = (id: string) => {
-    console.log("Téléchargement de l'intervention:", id);
-    // Implémentation future pour le téléchargement du rapport d'intervention
+  const handleDownload = (intervention: Ticket) => {
+    // Create a text representation of the intervention data
+    const content = `
+Intervention #${intervention.id}
+Titre: ${intervention.title}
+Description: ${intervention.description || 'N/A'}
+Type: ${intervention.type}
+Statut: ${intervention.status}
+Date: ${new Date(intervention.created_at).toLocaleDateString()}
+Technicien: ${intervention.assigned_to || 'Non assigné'}
+    `;
+    
+    // Create a Blob and download it
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `intervention-${intervention.id.slice(0, 8)}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Téléchargement réussi",
+      description: `L'intervention ${intervention.id.slice(0, 8)} a été téléchargée`,
+    });
   };
 
   const handleDelete = async (id: string) => {
@@ -134,7 +158,8 @@ const Interventions = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDownload(intervention.id)}
+                          onClick={() => handleDownload(intervention)}
+                          title="Télécharger l'intervention"
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -143,6 +168,7 @@ const Interventions = () => {
                           size="icon"
                           onClick={() => handleDelete(intervention.id)}
                           className="text-red-500"
+                          title="Supprimer l'intervention"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

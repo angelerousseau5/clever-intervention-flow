@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Navigation } from "@/components/Navigation";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 const InterventionAccess = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +17,7 @@ const InterventionAccess = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -25,23 +28,43 @@ const InterventionAccess = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // TODO: Implement actual validation and form retrieval
-    console.log("Accessing form with:", formData);
-    
-    // Simulate API call with failure for demo
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Verify ticket existence
+      const { data: ticket, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('id', formData.ticketNumber)
+        .single();
       
-      // Example of form not found notification
+      if (error || !ticket) {
+        toast({
+          title: "Formulaire non trouvé",
+          description: "Veuillez vérifier le numéro de ticket saisi.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Success - store access info and redirect to view form
+      localStorage.setItem('interventionAccess', JSON.stringify({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        companyName: formData.companyName,
+        ticketId: formData.ticketNumber,
+        accessedAt: new Date().toISOString()
+      }));
+      
+      navigate(`/intervention-form/${formData.ticketNumber}`);
+    } catch (error) {
+      console.error("Erreur lors de la vérification du ticket:", error);
       toast({
-        title: "Formulaire non trouvé",
-        description: "Veuillez vérifier les informations saisies.",
+        title: "Erreur",
+        description: "Une erreur est survenue. Veuillez réessayer plus tard.",
         variant: "destructive",
       });
-      
-      // In a real application, on success we would redirect to the form
-      // window.location.href = `/intervention-form/${formData.ticketNumber}`;
-    }, 1000);
+      setIsLoading(false);
+    }
   };
 
   return (

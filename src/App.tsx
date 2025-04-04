@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import InterventionAccess from "./pages/InterventionAccess";
+import InterventionForm from "./pages/InterventionForm";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import Interventions from "./pages/Interventions";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/intervention" element={<InterventionAccess />} />
+            <Route path="/intervention-form/:id" element={<InterventionForm />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard/interventions" element={<ProtectedRoute><Interventions /></ProtectedRoute>} />
             <Route path="/dashboard/create-ticket" element={<ProtectedRoute><CreateTicket /></ProtectedRoute>} />
