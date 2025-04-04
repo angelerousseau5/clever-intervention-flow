@@ -29,7 +29,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useTickets } from "@/hooks/useTickets";
+import { useTickets, Ticket } from "@/hooks/useTickets";
 import { useNavigate } from "react-router-dom";
 import { Plus, X, Trash2, PlusCircle, Move, ArrowUp, ArrowDown } from "lucide-react";
 import { 
@@ -46,6 +46,7 @@ const baseSchema = {
   title: z.string().min(2, "Le titre doit contenir au moins 2 caractères"),
   description: z.string().min(10, "La description doit contenir au moins 10 caractères"),
   status: z.string().default("En attente"),
+  type: z.string().min(1, "Le type est requis"),
 };
 
 // Interface pour les champs personnalisés
@@ -85,16 +86,17 @@ const CreateTicket = () => {
 
   // Construction dynamique du schéma de validation
   const buildFormSchema = () => {
-    let schemaObj = { ...baseSchema };
+    let schemaObj: Record<string, any> = { ...baseSchema };
     
     // Ajouter les champs prédéfinis activés
     fieldConfig.forEach(field => {
       if (field.enabled) {
-        if (field.originalName === "type" || field.originalName === "priority") {
-          schemaObj[field.originalName] = z.string().min(1, `Veuillez sélectionner un ${field.label.toLowerCase()}`);
+        if (field.originalName === "priority") {
+          schemaObj[field.originalName] = z.string().optional();
         } else if (field.originalName === "assigned_to") {
           schemaObj[field.originalName] = z.string().optional();
         }
+        // Le type est déjà dans baseSchema
       }
     });
     
@@ -119,7 +121,7 @@ const CreateTicket = () => {
       title: "",
       description: "",
       status: "En attente",
-      ...(fieldConfig.find(f => f.id === "type" && f.enabled) ? { type: "" } : {}),
+      type: "",
       ...(fieldConfig.find(f => f.id === "priority" && f.enabled) ? { priority: "" } : {}),
       ...(fieldConfig.find(f => f.id === "assigned_to" && f.enabled) ? { assigned_to: "" } : {}),
     },
@@ -127,16 +129,17 @@ const CreateTicket = () => {
 
   // Mise à jour du formulaire lorsque les champs changent
   useEffect(() => {
+    const currentValues = form.getValues();
     form.reset({
-      ...form.getValues(),
-      ...(fieldConfig.find(f => f.id === "type" && f.enabled) ? {} : { type: undefined }),
-      ...(fieldConfig.find(f => f.id === "priority" && f.enabled) ? {} : { priority: undefined }),
-      ...(fieldConfig.find(f => f.id === "assigned_to" && f.enabled) ? {} : { assigned_to: undefined }),
+      ...currentValues,
+      ...(fieldConfig.find(f => f.id === "type" && f.enabled) ? { type: currentValues.type || "" } : {}),
+      ...(fieldConfig.find(f => f.id === "priority" && f.enabled) ? { priority: currentValues.priority || "" } : {}),
+      ...(fieldConfig.find(f => f.id === "assigned_to" && f.enabled) ? { assigned_to: currentValues.assigned_to || "" } : {}),
     });
   }, [fieldConfig]);
 
   const onSubmit = async (values: FormValues) => {
-    const ticket = await createTicket(values);
+    const ticket = await createTicket(values as Partial<Ticket>);
     
     if (ticket) {
       navigate("/dashboard/interventions");

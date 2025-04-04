@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,11 +7,11 @@ import { toast } from "@/components/ui/use-toast";
 export interface Ticket {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   status: string;
   type: string;
   priority?: string;
-  assigned_to: string;
+  assigned_to?: string | null;
   created_at: string;
   updated_at: string;
   created_by: string;
@@ -79,6 +80,16 @@ export const useTickets = () => {
       setIsLoading(true);
       if (!user) return null;
 
+      // Ensure required fields are present
+      if (!ticketData.title || !ticketData.type) {
+        toast({
+          title: "Erreur",
+          description: "Le titre et le type sont requis",
+          variant: "destructive",
+        });
+        return null;
+      }
+
       const newTicket = {
         ...ticketData,
         created_by: user.id,
@@ -87,7 +98,7 @@ export const useTickets = () => {
 
       const { data, error } = await supabase
         .from('tickets')
-        .insert([newTicket])
+        .insert(newTicket)
         .select()
         .single();
 
