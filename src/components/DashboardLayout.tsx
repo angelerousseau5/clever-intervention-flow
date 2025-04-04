@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LayoutDashboard, FileText, Plus, LogOut } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 type DashboardLayoutProps = {
   children: React.ReactNode;
@@ -11,12 +12,8 @@ type DashboardLayoutProps = {
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
-  
-  // Mock data for the logged-in company
-  const company = {
-    name: "Entreprise Demo SAS",
-    logo: "E",
-  };
+  const navigate = useNavigate();
+  const { signOut, profile } = useAuth();
   
   // Navigation items for the sidebar
   const navItems = [
@@ -24,6 +21,10 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Interventions", path: "/dashboard/interventions", icon: FileText },
     { name: "Nouveau ticket", path: "/dashboard/create-ticket", icon: Plus },
   ];
+
+  const handleLogout = async () => {
+    await signOut();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
@@ -50,11 +51,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="p-6 border-b">
           <div className="flex items-center gap-3">
             <div className="bg-primary text-white w-10 h-10 rounded-full flex items-center justify-center font-bold">
-              {company.logo}
+              {profile?.company_name?.charAt(0) || "E"}
             </div>
             <div>
               <div className="font-medium text-sm text-gray-600">Bienvenue,</div>
-              <div className="font-semibold truncate">{company.name}</div>
+              <div className="font-semibold truncate">{profile?.company_name || "Entreprise"}</div>
             </div>
           </div>
         </div>
@@ -80,7 +81,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </ul>
           
           <div className="mt-8 pt-4 border-t">
-            <Button variant="ghost" className="w-full justify-start text-red-500">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-red-500"
+              onClick={handleLogout}
+            >
               <LogOut size={20} className="mr-2" />
               Déconnexion
             </Button>

@@ -4,55 +4,57 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, CheckCircle, AlertCircle, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useTickets, Ticket } from "@/hooks/useTickets";
 
 const Dashboard = () => {
-  // Mock data for dashboard
-  const stats = [
+  const { getTickets, isLoading } = useTickets();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    completed: 0,
+    pending: 0,
+  });
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      const data = await getTickets();
+      setTickets(data);
+      
+      // Calculer les statistiques
+      const completed = data.filter(ticket => ticket.status === "Terminé").length;
+      setStats({
+        total: data.length,
+        completed,
+        pending: data.length - completed,
+      });
+    };
+
+    fetchTickets();
+  }, [getTickets]);
+
+  // Statistiques pour le tableau de bord
+  const statsItems = [
     {
       title: "Total Interventions",
-      value: "24",
+      value: stats.total.toString(),
       icon: FileText,
       description: "Toutes les interventions",
       color: "blue",
     },
     {
       title: "Interventions Complétées",
-      value: "16",
+      value: stats.completed.toString(),
       icon: CheckCircle,
-      description: "66% terminées",
+      description: stats.total > 0 ? `${Math.round((stats.completed / stats.total) * 100)}% terminées` : "0% terminées",
       color: "green",
     },
     {
       title: "Interventions En Attente",
-      value: "8",
+      value: stats.pending.toString(),
       icon: AlertCircle,
-      description: "33% en attente",
+      description: stats.total > 0 ? `${Math.round((stats.pending / stats.total) * 100)}% en attente` : "0% en attente",
       color: "orange",
-    },
-  ];
-
-  // Recent items mock data
-  const recentItems = [
-    {
-      id: "INT-12345",
-      title: "Maintenance préventive",
-      date: "08/04/2025",
-      status: "Complété",
-      technician: "Michel Dupont",
-    },
-    {
-      id: "INT-12344",
-      title: "Réparation climatiseur",
-      date: "07/04/2025",
-      status: "En attente",
-      technician: "Sarah Martin",
-    },
-    {
-      id: "INT-12343",
-      title: "Installation équipement",
-      date: "05/04/2025",
-      status: "Complété",
-      technician: "Jean Leroux",
     },
   ];
 
@@ -71,7 +73,7 @@ const Dashboard = () => {
 
         {/* Stats cards */}
         <div className="grid gap-4 md:grid-cols-3">
-          {stats.map((stat) => (
+          {statsItems.map((stat) => (
             <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500">
@@ -96,46 +98,63 @@ const Dashboard = () => {
             <CardTitle>Interventions récentes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-2">Référence</th>
-                    <th className="text-left py-3 px-2">Titre</th>
-                    <th className="text-left py-3 px-2">Date</th>
-                    <th className="text-left py-3 px-2">Technicien</th>
-                    <th className="text-left py-3 px-2">Statut</th>
-                    <th className="text-left py-3 px-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentItems.map((item) => (
-                    <tr key={item.id} className="border-b">
-                      <td className="py-3 px-2 font-medium">{item.id}</td>
-                      <td className="py-3 px-2">{item.title}</td>
-                      <td className="py-3 px-2">{item.date}</td>
-                      <td className="py-3 px-2">{item.technician}</td>
-                      <td className="py-3 px-2">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                            item.status === "Complété"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2">
-                        <Button variant="ghost" size="sm">
-                          Voir
-                        </Button>
-                      </td>
+            {isLoading ? (
+              <div className="flex justify-center py-6">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+              </div>
+            ) : tickets.length === 0 ? (
+              <div className="text-center py-6 text-gray-500">
+                <p>Aucune intervention pour le moment</p>
+                <Link to="/dashboard/create-ticket">
+                  <Button variant="link" className="mt-2">
+                    Créer votre première intervention
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-2">Référence</th>
+                      <th className="text-left py-3 px-2">Titre</th>
+                      <th className="text-left py-3 px-2">Date</th>
+                      <th className="text-left py-3 px-2">Technicien</th>
+                      <th className="text-left py-3 px-2">Statut</th>
+                      <th className="text-left py-3 px-2">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {tickets.slice(0, 3).map((ticket) => (
+                      <tr key={ticket.id} className="border-b">
+                        <td className="py-3 px-2 font-medium">{ticket.id.slice(0, 8)}</td>
+                        <td className="py-3 px-2">{ticket.title}</td>
+                        <td className="py-3 px-2">{new Date(ticket.created_at).toLocaleDateString()}</td>
+                        <td className="py-3 px-2">{ticket.assigned_to || "Non assigné"}</td>
+                        <td className="py-3 px-2">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                              ticket.status === "Terminé"
+                                ? "bg-green-100 text-green-800"
+                                : ticket.status === "En cours"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {ticket.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2">
+                          <Button variant="ghost" size="sm">
+                            Voir
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

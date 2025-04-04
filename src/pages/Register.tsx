@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Navigation } from "@/components/Navigation";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -13,7 +14,15 @@ const Register = () => {
     password: "",
     confirmPassword: ""
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const { signUp, isLoading, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Rediriger vers le tableau de bord si l'utilisateur est déjà connecté
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -22,15 +31,13 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
-    // TODO: Implement actual registration logic
-    console.log("Registration attempt with:", formData);
+    if (formData.password !== formData.confirmPassword) {
+      alert("Les mots de passe ne correspondent pas");
+      return;
+    }
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    await signUp(formData.email, formData.password, formData.companyName);
   };
 
   return (
