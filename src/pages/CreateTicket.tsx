@@ -39,9 +39,8 @@ import {
 } from "@/components/ui/resizable";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { toast } from "react-toastify";
+import { toast } from "@/components/ui/use-toast";
 
-// Schéma de validation du formulaire de base
 const baseSchema = {
   title: z.string().min(2, "Le titre doit contenir au moins 2 caractères"),
   description: z.string().min(10, "La description doit contenir au moins 10 caractères"),
@@ -49,7 +48,6 @@ const baseSchema = {
   type: z.string().min(1, "Le type est requis"),
 };
 
-// Interface pour les champs personnalisés
 interface CustomField {
   id: string;
   type: 'select' | 'input' | 'textarea';
@@ -74,21 +72,17 @@ const CreateTicket = () => {
   const [customTypes, setCustomTypes] = useState<string[]>([]);
   const [showCustomTypeInput, setShowCustomTypeInput] = useState(false);
   
-  // État pour les champs personnalisés
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   
-  // Configuration des champs prédéfinis
   const [fieldConfig, setFieldConfig] = useState<FieldConfigItem[]>([
     { id: "type", enabled: true, label: "Type", originalName: "type" },
     { id: "priority", enabled: true, label: "Priorité", originalName: "priority" },
     { id: "assigned_to", enabled: true, label: "Technicien assigné", originalName: "assigned_to" },
   ]);
 
-  // Construction dynamique du schéma de validation
   const buildFormSchema = () => {
     let schemaObj: Record<string, any> = { ...baseSchema };
     
-    // Ajouter les champs prédéfinis activés
     fieldConfig.forEach(field => {
       if (field.enabled) {
         if (field.originalName === "priority") {
@@ -96,11 +90,9 @@ const CreateTicket = () => {
         } else if (field.originalName === "assigned_to") {
           schemaObj[field.originalName] = z.string().optional();
         }
-        // Le type est déjà dans baseSchema
       }
     });
     
-    // Ajouter les champs personnalisés
     customFields.forEach(field => {
       if (field.required) {
         schemaObj[field.name] = z.string().min(1, `Le champ ${field.label} est requis`);
@@ -127,7 +119,6 @@ const CreateTicket = () => {
     },
   });
 
-  // Mise à jour du formulaire lorsque les champs changent
   useEffect(() => {
     const currentValues = form.getValues();
     form.reset({
@@ -139,7 +130,6 @@ const CreateTicket = () => {
   }, [fieldConfig]);
 
   const onSubmit = async (values: FormValues) => {
-    // Make sure all required fields are present
     if (!values.title || !values.type) {
       toast({
         title: "Erreur",
@@ -164,7 +154,6 @@ const CreateTicket = () => {
     }
   };
 
-  // Ajouter un champ personnalisé
   const addCustomField = (type: 'select' | 'input' | 'textarea') => {
     const newId = `custom_${Date.now()}`;
     const newName = `custom_field_${customFields.length + 1}`;
@@ -181,12 +170,10 @@ const CreateTicket = () => {
     setCustomFields([...customFields, newField]);
   };
 
-  // Supprimer un champ personnalisé
   const removeCustomField = (id: string) => {
     setCustomFields(customFields.filter(field => field.id !== id));
   };
 
-  // Toggle pour activer/désactiver un champ prédéfini
   const toggleField = (id: string) => {
     setFieldConfig(
       fieldConfig.map(field => 
@@ -197,7 +184,6 @@ const CreateTicket = () => {
     );
   };
 
-  // Modifier le label d'un champ
   const updateFieldLabel = (id: string, value: string) => {
     if (id.startsWith('custom_')) {
       setCustomFields(
@@ -218,7 +204,6 @@ const CreateTicket = () => {
     }
   };
 
-  // Déplacer un champ vers le haut
   const moveFieldUp = (index: number) => {
     if (index <= 0) return;
     const newFields = [...customFields];
@@ -226,7 +211,6 @@ const CreateTicket = () => {
     setCustomFields(newFields);
   };
 
-  // Déplacer un champ vers le bas
   const moveFieldDown = (index: number) => {
     if (index >= customFields.length - 1) return;
     const newFields = [...customFields];
@@ -234,7 +218,6 @@ const CreateTicket = () => {
     setCustomFields(newFields);
   };
 
-  // Rendre un champ requis ou non
   const toggleRequired = (id: string) => {
     setCustomFields(
       customFields.map(field => 
@@ -389,7 +372,6 @@ const CreateTicket = () => {
                       />
                     )}
 
-                    {/* Champs personnalisés */}
                     {customFields.map((field, index) => (
                       <DraggableFieldContainer 
                         key={field.id}
