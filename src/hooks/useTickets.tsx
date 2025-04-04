@@ -96,9 +96,23 @@ export const useTickets = () => {
         status: ticketData.status || "En attente",
       };
 
+      // Explicitly type the newTicket to ensure title and type are present
+      const typedTicket: {
+        title: string;
+        type: string;
+        created_by: string;
+        status: string;
+        description?: string | null;
+        priority?: string;
+        assigned_to?: string | null;
+        id?: string;
+        created_at?: string;
+        updated_at?: string;
+      } = newTicket as any; // Type assertion because we've already validated title and type
+
       const { data, error } = await supabase
         .from('tickets')
-        .insert(newTicket)
+        .insert(typedTicket)
         .select()
         .single();
 

@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +39,7 @@ import {
 } from "@/components/ui/resizable";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { toast } from "react-toastify";
 
 // Schéma de validation du formulaire de base
 const baseSchema = {
@@ -139,6 +139,16 @@ const CreateTicket = () => {
   }, [fieldConfig]);
 
   const onSubmit = async (values: FormValues) => {
+    // Make sure all required fields are present
+    if (!values.title || !values.type) {
+      toast({
+        title: "Erreur",
+        description: "Le titre et le type sont requis",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const ticket = await createTicket(values as Partial<Ticket>);
     
     if (ticket) {
