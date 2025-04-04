@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Download, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTickets, Ticket } from "@/hooks/useTickets";
+import { Link } from "react-router-dom";
 
 const Interventions = () => {
   const { getTickets, deleteTicket, isLoading } = useTickets();
@@ -57,8 +58,8 @@ const Interventions = () => {
           ) : interventions.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500">Aucune intervention trouvée</p>
-              <Button as="a" href="/dashboard/create-ticket" className="mt-4">
-                Créer une intervention
+              <Button className="mt-4">
+                <Link to="/dashboard/create-ticket">Créer une intervention</Link>
               </Button>
             </div>
           ) : (

@@ -25,9 +25,9 @@ export const useTickets = () => {
       if (!user) return [];
 
       const { data, error } = await supabase
-        .from("tickets")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from('tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error("Erreur lors de la récupération des tickets:", error);
@@ -54,9 +54,9 @@ export const useTickets = () => {
       if (!user) return null;
 
       const { data, error } = await supabase
-        .from("tickets")
-        .select("*")
-        .eq("id", id)
+        .from('tickets')
+        .select('*')
+        .eq('id', id)
         .single();
 
       if (error) {
@@ -84,7 +84,7 @@ export const useTickets = () => {
       };
 
       const { data, error } = await supabase
-        .from("tickets")
+        .from('tickets')
         .insert([newTicket])
         .select()
         .single();
@@ -119,9 +119,9 @@ export const useTickets = () => {
       if (!user) return null;
 
       const { data, error } = await supabase
-        .from("tickets")
+        .from('tickets')
         .update(ticketData)
-        .eq("id", id)
+        .eq('id', id)
         .select()
         .single();
 
@@ -155,9 +155,9 @@ export const useTickets = () => {
       if (!user) return false;
 
       const { error } = await supabase
-        .from("tickets")
+        .from('tickets')
         .delete()
-        .eq("id", id);
+        .eq('id', id);
 
       if (error) {
         console.error("Erreur lors de la suppression du ticket:", error);
