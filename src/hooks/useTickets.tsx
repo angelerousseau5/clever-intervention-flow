@@ -15,6 +15,7 @@ export interface Ticket {
   created_at: string;
   updated_at: string;
   created_by: string;
+  form_data?: string; // JSON string containing the custom fields and values
 }
 
 export const useTickets = () => {
@@ -64,7 +65,7 @@ export const useTickets = () => {
       setIsLoading(true);
       setError(null);
       
-      if (!user) return null;
+      if (!user && !id) return null;
 
       const { data, error } = await supabase
         .from('tickets')
@@ -121,6 +122,7 @@ export const useTickets = () => {
         description: ticketData.description || null,
         priority: ticketData.priority,
         assigned_to: ticketData.assigned_to || null,
+        form_data: ticketData.form_data || null
       };
 
       const { data, error } = await supabase
@@ -165,7 +167,10 @@ export const useTickets = () => {
 
       const { data, error } = await supabase
         .from('tickets')
-        .update(ticketData)
+        .update({
+          ...ticketData,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
         .select()
         .single();

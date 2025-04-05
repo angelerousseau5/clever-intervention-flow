@@ -55,6 +55,17 @@ const InterventionAccess = () => {
         accessedAt: new Date().toISOString()
       }));
       
+      // Update ticket status to "En cours" if it's not already completed
+      if (ticket.status !== "Terminé") {
+        await supabase
+          .from('tickets')
+          .update({ 
+            status: "En cours",
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', formData.ticketNumber);
+      }
+      
       navigate(`/intervention-form/${formData.ticketNumber}`);
     } catch (error) {
       console.error("Erreur lors de la vérification du ticket:", error);

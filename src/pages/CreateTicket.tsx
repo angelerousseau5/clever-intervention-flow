@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,10 +30,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useTickets, Ticket } from "@/hooks/useTickets";
-import { useNavigate } from "react-router-dom";
-import { Plus, X, Trash2, PlusCircle, Move, ArrowUp, ArrowDown } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Plus, X, Trash2, PlusCircle, Move, ArrowUp, ArrowDown, Save, Edit } from "lucide-react";
 import { 
-  DraggableFieldContainer, 
   ResizablePanelGroup, 
   ResizablePanel, 
   ResizableHandle 
@@ -66,11 +66,14 @@ type FieldConfigItem = {
 };
 
 const CreateTicket = () => {
-  const { createTicket, isLoading } = useTickets();
+  const { createTicket, updateTicket, getTicketById, isLoading } = useTickets();
   const navigate = useNavigate();
+  const location = useLocation();
   const [customTypeInput, setCustomTypeInput] = useState("");
   const [customTypes, setCustomTypes] = useState<string[]>([]);
   const [showCustomTypeInput, setShowCustomTypeInput] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentTicketId, setCurrentTicketId] = useState<string | null>(null);
   
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   
@@ -79,6 +82,46 @@ const CreateTicket = () => {
     { id: "priority", enabled: true, label: "Priorité", originalName: "priority" },
     { id: "assigned_to", enabled: true, label: "Technicien assigné", originalName: "assigned_to" },
   ]);
+
+  // Get ticket ID from URL if editing
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const editId = params.get('edit');
+    
+    if (editId) {
+      setIsEditing(true);
+      setCurrentTicketId(editId);
+      loadTicketData(editId);
+    }
+  }, [location]);
+
+  const loadTicketData = async (id: string) => {
+    const ticket = await getTicketById(id);
+    
+    if (ticket) {
+      // Reset form with ticket data
+      form.reset({
+        title: ticket.title,
+        description: ticket.description || "",
+        status: ticket.status,
+        type: ticket.type,
+        priority: ticket.priority || "",
+        assigned_to: ticket.assigned_to || "",
+      });
+      
+      // Load custom fields if any
+      if (ticket.form_data) {
+        try {
+          const formData = JSON.parse(ticket.form_data);
+          if (formData.customFields) {
+            setCustomFields(formData.customFields);
+          }
+        } catch (e) {
+          console.error("Error parsing form data:", e);
+        }
+      }
+    }
+  };
 
   const buildFormSchema = () => {
     let schemaObj: Record<string, any> = { ...baseSchema };
@@ -139,9 +182,30 @@ const CreateTicket = () => {
       return;
     }
     
-    const ticket = await createTicket(values as Partial<Ticket>);
+    // Prepare form data to save custom fields
+    const formData = {
+      customFields,
+      values: {},
+      submitted: false
+    };
     
-    if (ticket) {
+    let result: Ticket | null;
+    
+    if (isEditing && currentTicketId) {
+      // Update existing ticket
+      result = await updateTicket(currentTicketId, {
+        ...values as Partial<Ticket>,
+        form_data: JSON.stringify(formData)
+      });
+    } else {
+      // Create new ticket
+      result = await createTicket({
+        ...values as Partial<Ticket>,
+        form_data: JSON.stringify(formData)
+      });
+    }
+    
+    if (result) {
       navigate("/dashboard/interventions");
     }
   };
@@ -227,12 +291,55 @@ const CreateTicket = () => {
       )
     );
   };
+  
+  const updateFieldOptions = (id: string, options: string[]) => {
+    setCustomFields(
+      customFields.map(field => 
+        field.id === id 
+          ? { ...field, options }
+          : field
+      )
+    );
+  };
+  
+  const addOptionToField = (id: string, option: string) => {
+    if (!option.trim()) return;
+    
+    setCustomFields(
+      customFields.map(field => {
+        if (field.id === id && field.type === 'select') {
+          const currentOptions = field.options || [];
+          return { 
+            ...field, 
+            options: [...currentOptions, option.trim()] 
+          };
+        }
+        return field;
+      })
+    );
+  };
+  
+  const removeOptionFromField = (id: string, optionIndex: number) => {
+    setCustomFields(
+      customFields.map(field => {
+        if (field.id === id && field.type === 'select' && field.options) {
+          return { 
+            ...field, 
+            options: field.options.filter((_, index) => index !== optionIndex) 
+          };
+        }
+        return field;
+      })
+    );
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Nouveau Ticket</h1>
+          <h1 className="text-2xl font-bold">
+            {isEditing ? "Modifier le Ticket" : "Nouveau Ticket"}
+          </h1>
           <Button variant="outline" onClick={() => addCustomField('input')}>
             <PlusCircle className="h-4 w-4 mr-2" />
             Ajouter un champ
@@ -243,7 +350,7 @@ const CreateTicket = () => {
           <ResizablePanel defaultSize={70}>
             <Card>
               <CardHeader>
-                <CardTitle>Informations du ticket</CardTitle>
+                <CardTitle>{isEditing ? "Modification du ticket" : "Informations du ticket"}</CardTitle>
               </CardHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -372,72 +479,92 @@ const CreateTicket = () => {
                       />
                     )}
 
-                    {customFields.map((field, index) => (
-                      <DraggableFieldContainer 
-                        key={field.id}
-                        onMoveUp={index > 0 ? () => moveFieldUp(index) : undefined}
-                        onMoveDown={index < customFields.length - 1 ? () => moveFieldDown(index) : undefined}
-                      >
-                        <FormField
-                          control={form.control}
-                          name={field.name as any}
-                          render={({ field: formField }) => (
-                            <FormItem>
+                    {/* Custom Fields Section - these will be editable by technicians */}
+                    {customFields.length > 0 && (
+                      <div className="mt-6 border-t pt-6">
+                        <h3 className="text-lg font-medium mb-4">Champs à remplir par le technicien</h3>
+                        <div className="space-y-4">
+                          {customFields.map((field, index) => (
+                            <div key={field.id} className="border p-4 rounded-md">
                               <div className="flex justify-between items-center mb-2">
-                                <FormLabel>{field.label}</FormLabel>
-                                <Button 
-                                  type="button" 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => removeCustomField(field.id)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </div>
-                              <FormControl>
-                                {field.type === 'input' && (
-                                  <Input 
-                                    {...formField} 
-                                    placeholder={`Entrez ${field.label.toLowerCase()}`} 
-                                  />
-                                )}
-                                {field.type === 'textarea' && (
-                                  <Textarea 
-                                    {...formField} 
-                                    placeholder={`Entrez ${field.label.toLowerCase()}`} 
-                                  />
-                                )}
-                                {field.type === 'select' && (
-                                  <Select 
-                                    onValueChange={formField.onChange} 
-                                    value={formField.value}
+                                <Label className="font-medium">{field.label}</Label>
+                                <div className="flex space-x-1">
+                                  {index > 0 && (
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => moveFieldUp(index)}
+                                    >
+                                      <ArrowUp className="h-4 w-4 text-gray-500" />
+                                    </Button>
+                                  )}
+                                  {index < customFields.length - 1 && (
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => moveFieldDown(index)}
+                                    >
+                                      <ArrowDown className="h-4 w-4 text-gray-500" />
+                                    </Button>
+                                  )}
+                                  <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => removeCustomField(field.id)}
                                   >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              {field.type === 'input' && (
+                                <Input 
+                                  placeholder={`Le technicien saisira ${field.label.toLowerCase()}`}
+                                  disabled
+                                  className="bg-gray-50"
+                                />
+                              )}
+                              {field.type === 'textarea' && (
+                                <Textarea 
+                                  placeholder={`Le technicien saisira ${field.label.toLowerCase()}`}
+                                  disabled
+                                  className="bg-gray-50"
+                                />
+                              )}
+                              {field.type === 'select' && (
+                                <div className="space-y-2">
+                                  <Select disabled>
                                     <SelectTrigger>
-                                      <SelectValue placeholder={`Sélectionnez ${field.label.toLowerCase()}`} />
+                                      <SelectValue placeholder={`Le technicien choisira ${field.label.toLowerCase()}`} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {field.options?.map(option => (
-                                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                                      {field.options?.map((option, i) => (
+                                        <div key={i} className="flex justify-between items-center px-2 py-1 hover:bg-gray-50">
+                                          <span>{option}</span>
+                                        </div>
                                       ))}
                                     </SelectContent>
                                   </Select>
-                                )}
-                              </FormControl>
+                                </div>
+                              )}
+                              
                               <div className="flex items-center mt-2 text-sm">
                                 <Switch 
-                                  id={`required-${field.id}`}
+                                  id={`form-required-${field.id}`}
                                   checked={field.required}
                                   onCheckedChange={() => toggleRequired(field.id)}
                                   className="mr-2"
                                 />
-                                <Label htmlFor={`required-${field.id}`}>Champ requis</Label>
+                                <Label htmlFor={`form-required-${field.id}`}>Champ requis</Label>
                               </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </DraggableFieldContainer>
-                    ))}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <FormField
                       control={form.control}
@@ -459,7 +586,17 @@ const CreateTicket = () => {
                   </CardContent>
                   <CardFooter>
                     <Button type="submit" className="w-full md:w-auto" disabled={isLoading}>
-                      {isLoading ? "Création en cours..." : "Créer le ticket"}
+                      {isLoading ? "Traitement en cours..." : isEditing ? (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Enregistrer les modifications
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Créer le ticket
+                        </>
+                      )}
                     </Button>
                   </CardFooter>
                 </form>
@@ -507,7 +644,7 @@ const CreateTicket = () => {
                 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-medium">Ajouter des champs</h3>
+                    <h3 className="text-sm font-medium">Ajouter des champs pour le technicien</h3>
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
@@ -542,7 +679,7 @@ const CreateTicket = () => {
                   
                   {customFields.length > 0 && (
                     <div className="mt-4">
-                      <h3 className="text-sm font-medium mb-2">Champs personnalisés</h3>
+                      <h3 className="text-sm font-medium mb-2">Configuration des champs</h3>
                       {customFields.map((field, index) => (
                         <div key={field.id} className="border rounded-md p-3 mb-2">
                           <div className="flex justify-between items-center">
@@ -580,6 +717,68 @@ const CreateTicket = () => {
                             />
                             <Label htmlFor={`config-required-${field.id}`}>Champ requis</Label>
                           </div>
+                          
+                          {field.type === 'select' && (
+                            <div className="mt-3">
+                              <Label className="text-sm font-medium">Options:</Label>
+                              <div className="mt-1 space-y-2">
+                                {field.options?.map((option, index) => (
+                                  <div key={index} className="flex items-center">
+                                    <Input
+                                      value={option}
+                                      onChange={(e) => {
+                                        const newOptions = [...(field.options || [])];
+                                        newOptions[index] = e.target.value;
+                                        updateFieldOptions(field.id, newOptions);
+                                      }}
+                                      className="flex-1 h-7 text-sm"
+                                    />
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => removeOptionFromField(field.id, index)}
+                                      className="ml-1"
+                                    >
+                                      <X className="h-3 w-3 text-red-500" />
+                                    </Button>
+                                  </div>
+                                ))}
+                                
+                                <div className="flex items-center mt-1">
+                                  <Input
+                                    placeholder="Nouvelle option..."
+                                    className="flex-1 h-7 text-sm"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const input = e.currentTarget;
+                                        if (input.value) {
+                                          addOptionToField(field.id, input.value);
+                                          input.value = '';
+                                        }
+                                      }
+                                    }}
+                                  />
+                                  <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="ml-1"
+                                    onClick={(e) => {
+                                      const input = e.currentTarget.previousSibling as HTMLInputElement;
+                                      if (input && input.value) {
+                                        addOptionToField(field.id, input.value);
+                                        input.value = '';
+                                      }
+                                    }}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
