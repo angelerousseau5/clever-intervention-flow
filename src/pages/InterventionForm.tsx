@@ -75,12 +75,14 @@ const InterventionForm = () => {
           throw new Error(error?.message || "Formulaire introuvable");
         }
 
-        setIntervention(data as Ticket);
+        // Ensure data is cast to the Ticket type with form_data
+        const typedData = data as Ticket;
+        setIntervention(typedData);
         
         // Initialize form values
-        if (data.form_data) {
+        if (typedData.form_data) {
           try {
-            const parsedFormData = JSON.parse(data.form_data);
+            const parsedFormData = JSON.parse(typedData.form_data);
             if (parsedFormData.customFields) {
               setCustomFields(parsedFormData.customFields);
             }
