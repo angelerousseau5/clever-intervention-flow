@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -95,7 +94,10 @@ export const useTickets = () => {
       setIsLoading(true);
       setError(null);
       
-      if (!user) return null;
+      if (!user) {
+        console.log("Utilisateur non connecté");
+        return null;
+      }
 
       // Vérification des champs requis
       if (!ticketData.title || !ticketData.type) {
@@ -124,6 +126,8 @@ export const useTickets = () => {
         assigned_to: ticketData.assigned_to || null,
         form_data: ticketData.form_data || null
       };
+
+      console.log("Creating ticket with data:", newTicket);
 
       const { data, error } = await supabase
         .from('tickets')

@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,7 +82,6 @@ const CreateTicket = () => {
     { id: "assigned_to", enabled: true, label: "Technicien assigné", originalName: "assigned_to" },
   ]);
 
-  // Get ticket ID from URL if editing
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const editId = params.get('edit');
@@ -99,7 +97,6 @@ const CreateTicket = () => {
     const ticket = await getTicketById(id);
     
     if (ticket) {
-      // Reset form with ticket data
       form.reset({
         title: ticket.title,
         description: ticket.description || "",
@@ -109,7 +106,6 @@ const CreateTicket = () => {
         assigned_to: ticket.assigned_to || "",
       });
       
-      // Load custom fields if any
       if (ticket.form_data) {
         try {
           const formData = JSON.parse(ticket.form_data);
@@ -182,7 +178,6 @@ const CreateTicket = () => {
       return;
     }
     
-    // Prepare form data to save custom fields
     const formData = {
       customFields,
       values: {},
@@ -191,22 +186,30 @@ const CreateTicket = () => {
     
     let result: Ticket | null;
     
-    if (isEditing && currentTicketId) {
-      // Update existing ticket
-      result = await updateTicket(currentTicketId, {
-        ...values as Partial<Ticket>,
-        form_data: JSON.stringify(formData)
+    try {
+      if (isEditing && currentTicketId) {
+        result = await updateTicket(currentTicketId, {
+          ...values as Partial<Ticket>,
+          form_data: JSON.stringify(formData)
+        });
+      } else {
+        console.log("Creating new ticket with form data:", formData);
+        result = await createTicket({
+          ...values as Partial<Ticket>,
+          form_data: JSON.stringify(formData)
+        });
+      }
+      
+      if (result) {
+        navigate("/dashboard/interventions");
+      }
+    } catch (error) {
+      console.error("Error in form submission:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la soumission du formulaire",
+        variant: "destructive",
       });
-    } else {
-      // Create new ticket
-      result = await createTicket({
-        ...values as Partial<Ticket>,
-        form_data: JSON.stringify(formData)
-      });
-    }
-    
-    if (result) {
-      navigate("/dashboard/interventions");
     }
   };
 
@@ -479,7 +482,6 @@ const CreateTicket = () => {
                       />
                     )}
 
-                    {/* Custom Fields Section - these will be editable by technicians */}
                     {customFields.length > 0 && (
                       <div className="mt-6 border-t pt-6">
                         <h3 className="text-lg font-medium mb-4">Champs à remplir par le technicien</h3>
