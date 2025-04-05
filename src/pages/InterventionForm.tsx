@@ -1,24 +1,18 @@
 
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Download, ArrowLeft, Save } from "lucide-react";
 import { Ticket } from "@/hooks/useTickets";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import { InterventionHeader } from "@/components/intervention/InterventionHeader";
+import { InterventionGeneralInfo } from "@/components/intervention/InterventionGeneralInfo";
+import { CustomFormFields } from "@/components/intervention/CustomFormFields";
+import { InterventionDescription } from "@/components/intervention/InterventionDescription";
+import { InterventionAccessInfo } from "@/components/intervention/InterventionAccessInfo";
+import { SubmitFormSection } from "@/components/intervention/SubmitFormSection";
+import { generateInterventionPDF } from "@/components/intervention/PDFGenerator";
+import { useNavigate } from "react-router-dom";
 
 interface CustomField {
   name: string;
@@ -178,86 +172,13 @@ const InterventionForm = () => {
   
   const generatePDF = () => {
     if (!intervention) return;
-    
-    const doc = new jsPDF();
-    
-    // Add title
-    doc.setFontSize(20);
-    doc.text(`Intervention #${intervention.id.slice(0, 8)}`, 14, 22);
-    
-    // Add date
-    doc.setFontSize(10);
-    doc.text(`Date: ${new Date(intervention.created_at).toLocaleDateString()}`, 14, 30);
-    
-    // Add basic information
-    doc.setFontSize(12);
-    doc.text("Informations générales", 14, 40);
-    
-    // Create table for basic info
-    const basicInfo = [
-      ["Titre", intervention.title],
-      ["Type", intervention.type],
-      ["Statut", intervention.status],
-      ["Technicien", intervention.assigned_to || "Non assigné"]
-    ];
-    
-    (doc as any).autoTable({
-      startY: 45,
-      head: [["Champ", "Valeur"]],
-      body: basicInfo,
-      theme: 'striped',
-      headStyles: { fillColor: [93, 93, 134], textColor: 255 }
+    generateInterventionPDF({
+      intervention,
+      customFields,
+      formValues,
+      formSubmitted,
+      accessInfo
     });
-    
-    // Add custom fields if any
-    if (customFields.length > 0) {
-      const fieldsY = (doc as any).lastAutoTable.finalY + 10;
-      doc.text("Champs spécifiques", 14, fieldsY);
-      
-      const customData = customFields.map(field => [
-        field.label,
-        formValues[field.name] || "Non renseigné"
-      ]);
-      
-      (doc as any).autoTable({
-        startY: fieldsY + 5,
-        head: [["Champ", "Valeur"]],
-        body: customData,
-        theme: 'striped',
-        headStyles: { fillColor: [93, 93, 134], textColor: 255 }
-      });
-    }
-    
-    // Add description
-    const descY = (doc as any).lastAutoTable.finalY + 10;
-    doc.text("Description", 14, descY);
-    
-    (doc as any).autoTable({
-      startY: descY + 5,
-      body: [[intervention.description || "Aucune description fournie."]],
-      theme: 'plain'
-    });
-    
-    // Add submission info if submitted
-    if (formSubmitted) {
-      const submissionY = (doc as any).lastAutoTable.finalY + 10;
-      doc.text("Informations de soumission", 14, submissionY);
-      
-      const submissionInfo = [
-        ["Nom", `${accessInfo?.firstName} ${accessInfo?.lastName}`],
-        ["Entreprise", accessInfo?.companyName],
-        ["Date de soumission", new Date().toLocaleDateString()]
-      ];
-      
-      (doc as any).autoTable({
-        startY: submissionY + 5,
-        body: submissionInfo,
-        theme: 'striped'
-      });
-    }
-    
-    // Save the PDF
-    doc.save(`intervention-${intervention.id.slice(0, 8)}.pdf`);
   };
 
   if (isLoading) {
@@ -277,171 +198,40 @@ const InterventionForm = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="max-w-4xl mx-auto mt-8 px-4 sm:px-6">
-        <Button 
-          variant="outline" 
-          className="mb-4"
-          onClick={() => navigate('/intervention')}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour
-        </Button>
-        
-        <div className="bg-white shadow-md rounded-lg p-6 sm:p-8">
-          <div className="flex justify-between items-center border-b pb-4 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-secondary flex items-center">
-                <FileText className="mr-2 h-6 w-6 text-primary" />
-                Formulaire d'Intervention {intervention?.id.slice(0, 8)}
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Créé le {intervention && new Date(intervention.created_at).toLocaleDateString()}
-              </p>
+        {intervention && (
+          <>
+            <InterventionHeader 
+              intervention={intervention} 
+              generatePDF={generatePDF} 
+            />
+            
+            <div className="bg-white shadow-md rounded-lg p-6 sm:p-8">
+              <div className="space-y-6">
+                <InterventionGeneralInfo intervention={intervention} />
+                
+                {customFields.length > 0 && (
+                  <CustomFormFields 
+                    customFields={customFields}
+                    formValues={formValues}
+                    handleInputChange={handleInputChange}
+                    formSubmitted={formSubmitted}
+                  />
+                )}
+                
+                <InterventionDescription intervention={intervention} />
+                
+                <InterventionAccessInfo accessInfo={accessInfo} />
+                
+                <SubmitFormSection 
+                  handleSubmit={handleSubmit}
+                  isSaving={isSaving}
+                  formSubmitted={formSubmitted}
+                  customFieldsExist={customFields.length > 0}
+                />
+              </div>
             </div>
-            <Button 
-              variant="outline" 
-              className="flex items-center"
-              onClick={generatePDF}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Télécharger PDF
-            </Button>
-          </div>
-
-          {intervention && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold">Informations générales</h2>
-                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-3 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-500">Titre</p>
-                    <p className="font-medium">{intervention.title}</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-500">Type</p>
-                    <p className="font-medium">{intervention.type}</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-500">Statut</p>
-                    <p className="font-medium">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                          intervention.status === "Terminé"
-                            ? "bg-green-100 text-green-800"
-                            : intervention.status === "En cours"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {intervention.status}
-                      </span>
-                    </p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-500">Assigné à</p>
-                    <p className="font-medium">{intervention.assigned_to || "Non assigné"}</p>
-                  </div>
-                </div>
-              </div>
-
-              {customFields.length > 0 && (
-                <div>
-                  <h2 className="text-lg font-semibold">Formulaire à remplir</h2>
-                  <div className="mt-4 space-y-4">
-                    {customFields.map((field, index) => (
-                      <div key={field.name} className="border p-4 rounded-md">
-                        <Label htmlFor={field.name} className="text-sm font-medium">
-                          {field.label}
-                        </Label>
-                        <div className="mt-2">
-                          {field.type === 'input' && (
-                            <Input
-                              id={field.name}
-                              value={formValues[field.name] || ''}
-                              onChange={(e) => handleInputChange(field.name, e.target.value)}
-                              placeholder={`Entrez ${field.label.toLowerCase()}`}
-                              disabled={formSubmitted}
-                            />
-                          )}
-                          {field.type === 'textarea' && (
-                            <Textarea
-                              id={field.name}
-                              value={formValues[field.name] || ''}
-                              onChange={(e) => handleInputChange(field.name, e.target.value)}
-                              placeholder={`Entrez ${field.label.toLowerCase()}`}
-                              disabled={formSubmitted}
-                            />
-                          )}
-                          {field.type === 'select' && (
-                            <Select 
-                              onValueChange={(value) => handleInputChange(field.name, value)}
-                              value={formValues[field.name] || ''}
-                              disabled={formSubmitted}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder={`Sélectionnez ${field.label.toLowerCase()}`} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {field.options?.map(option => (
-                                  <SelectItem key={option} value={option}>{option}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <h2 className="text-lg font-semibold">Description</h2>
-                <div className="mt-2 p-4 bg-gray-50 rounded min-h-[100px]">
-                  {intervention.description || "Aucune description fournie."}
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-lg font-semibold">Informations d'accès</h2>
-                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-3 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-500">Nom complet</p>
-                    <p className="font-medium">{accessInfo?.firstName} {accessInfo?.lastName}</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-500">Entreprise</p>
-                    <p className="font-medium">{accessInfo?.companyName}</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-500">Date d'accès</p>
-                    <p className="font-medium">{accessInfo?.accessedAt && new Date(accessInfo.accessedAt).toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
-              
-              {!formSubmitted && customFields.length > 0 && (
-                <div className="mt-6 flex justify-end">
-                  <Button 
-                    onClick={handleSubmit} 
-                    disabled={isSaving}
-                    className="flex items-center"
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "Enregistrement..." : "Soumettre le formulaire"}
-                  </Button>
-                </div>
-              )}
-              
-              {formSubmitted && (
-                <div className="mt-6 bg-green-50 border border-green-200 rounded-md p-4">
-                  <p className="text-green-800 font-medium">
-                    Ce formulaire a été soumis avec succès.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
