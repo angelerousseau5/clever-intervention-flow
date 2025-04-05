@@ -81,7 +81,7 @@ const InterventionForm = () => {
           throw new Error(error?.message || "Formulaire introuvable");
         }
 
-        setIntervention(data);
+        setIntervention(data as Ticket);
         
         // Initialize form values
         if (data.form_data) {
