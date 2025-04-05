@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,7 +15,7 @@ export interface Ticket {
   created_at: string;
   updated_at: string;
   created_by: string;
-  form_data?: string; // Added form_data property to fix TypeScript error
+  form_data?: string;
 }
 
 export const useTickets = () => {
