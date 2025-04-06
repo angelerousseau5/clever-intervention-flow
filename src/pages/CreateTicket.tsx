@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -122,6 +123,13 @@ const CreateTicket = () => {
   const buildFormSchema = () => {
     let schemaObj: Record<string, any> = { ...baseSchema };
     
+    // Garantir que les champs de base sont toujours inclus
+    schemaObj.title = z.string().min(2, "Le titre doit contenir au moins 2 caractères");
+    schemaObj.description = z.string().min(10, "La description doit contenir au moins 10 caractères");
+    schemaObj.status = z.string().default("En attente");
+    schemaObj.type = z.string().min(1, "Le type est requis");
+    
+    // Ajouter les champs configurables s'ils sont activés
     fieldConfig.forEach(field => {
       if (field.enabled) {
         if (field.originalName === "priority") {
@@ -132,6 +140,7 @@ const CreateTicket = () => {
       }
     });
     
+    // Ajouter les champs personnalisés
     customFields.forEach(field => {
       if (field.required) {
         schemaObj[field.name] = z.string().min(1, `Le champ ${field.label} est requis`);
@@ -143,6 +152,7 @@ const CreateTicket = () => {
     return z.object(schemaObj);
   };
 
+  // Construire le schéma dynamiquement
   const formSchema = buildFormSchema();
   type FormValues = z.infer<typeof formSchema>;
 
@@ -158,17 +168,13 @@ const CreateTicket = () => {
     },
   });
 
+  // Mettre à jour le formulaire quand la configuration des champs change
   useEffect(() => {
-    const currentValues = form.getValues();
-    form.reset({
-      ...currentValues,
-      ...(fieldConfig.find(f => f.id === "type" && f.enabled) ? { type: currentValues.type || "" } : {}),
-      ...(fieldConfig.find(f => f.id === "priority" && f.enabled) ? { priority: currentValues.priority || "" } : {}),
-      ...(fieldConfig.find(f => f.id === "assigned_to" && f.enabled) ? { assigned_to: currentValues.assigned_to || "" } : {}),
-    });
-  }, [fieldConfig]);
+    form.reset(form.getValues()); // Réinitialiser avec les valeurs actuelles pour reconstruire le formulaire
+  }, [fieldConfig, formSchema]);
 
   const onSubmit = async (values: FormValues) => {
+    // Vérifier les champs obligatoires
     if (!values.title || !values.type) {
       toast({
         title: "Erreur",
@@ -178,26 +184,40 @@ const CreateTicket = () => {
       return;
     }
     
+    // Préparer les données du formulaire
     const formData = {
       customFields,
       values: {},
       submitted: false
     };
     
-    let result: Ticket | null;
-    
+    // Créer ou mettre à jour le ticket
     try {
+      let result: Ticket | null;
+      
+      // Créer un objet avec uniquement les champs activés dans fieldConfig
+      const ticketData: Partial<Ticket> = {
+        title: values.title,
+        description: values.description,
+        status: values.status,
+        type: values.type,
+        form_data: JSON.stringify(formData)
+      };
+      
+      // N'ajouter les champs optionnels que s'ils sont activés
+      fieldConfig.forEach(field => {
+        if (field.enabled && field.originalName !== "type") {
+          // @ts-ignore - Nous savons que ces champs existent dans values si enabled est true
+          ticketData[field.originalName] = values[field.originalName] || null;
+        }
+      });
+      
+      console.log("Données à soumettre:", ticketData);
+      
       if (isEditing && currentTicketId) {
-        result = await updateTicket(currentTicketId, {
-          ...values as Partial<Ticket>,
-          form_data: JSON.stringify(formData)
-        });
+        result = await updateTicket(currentTicketId, ticketData);
       } else {
-        console.log("Creating new ticket with form data:", formData);
-        result = await createTicket({
-          ...values as Partial<Ticket>,
-          form_data: JSON.stringify(formData)
-        });
+        result = await createTicket(ticketData);
       }
       
       if (result) {

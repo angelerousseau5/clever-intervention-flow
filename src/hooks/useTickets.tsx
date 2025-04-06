@@ -10,12 +10,12 @@ export interface Ticket {
   description: string | null;
   status: string;
   type: string;
-  priority?: string;
+  priority?: string | null;
   assigned_to?: string | null;
   created_at: string;
   updated_at: string;
   created_by: string;
-  form_data?: string;
+  form_data?: string | null;
 }
 
 export const useTickets = () => {
