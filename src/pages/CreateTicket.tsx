@@ -40,6 +40,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
+import { CustomFormFields } from "@/components/intervention/CustomFormFields";
+import { SubmitFormSection } from "@/components/intervention/SubmitFormSection";
 
 const baseSchema = {
   title: z.string().min(2, "Le titre doit contenir au moins 2 caractères"),
@@ -74,8 +76,9 @@ const CreateTicket = () => {
   const [showCustomTypeInput, setShowCustomTypeInput] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTicketId, setCurrentTicketId] = useState<string | null>(null);
-  
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [formSubmitted, setFormSubmitted] = useState(false);
   
   const [fieldConfig, setFieldConfig] = useState<FieldConfigItem[]>([
     { id: "type", enabled: true, label: "Type", originalName: "type" },
@@ -98,20 +101,37 @@ const CreateTicket = () => {
     const ticket = await getTicketById(id);
     
     if (ticket) {
-      form.reset({
+      // Mettre à jour le formulaire avec les valeurs du ticket
+      const formDefaultValues: any = {
         title: ticket.title,
         description: ticket.description || "",
         status: ticket.status,
         type: ticket.type,
-        priority: ticket.priority || "",
-        assigned_to: ticket.assigned_to || "",
-      });
+      };
       
+      // N'ajouter les champs optionnels que s'ils existent dans le ticket
+      if (ticket.priority) {
+        formDefaultValues.priority = ticket.priority;
+      }
+      
+      if (ticket.assigned_to) {
+        formDefaultValues.assigned_to = ticket.assigned_to;
+      }
+      
+      form.reset(formDefaultValues);
+      
+      // Charger les champs personnalisés s'ils existent
       if (ticket.form_data) {
         try {
           const formData = JSON.parse(ticket.form_data);
           if (formData.customFields) {
             setCustomFields(formData.customFields);
+          }
+          if (formData.values) {
+            setFormValues(formData.values);
+          }
+          if (formData.submitted) {
+            setFormSubmitted(formData.submitted);
           }
         } catch (e) {
           console.error("Error parsing form data:", e);
@@ -120,8 +140,9 @@ const CreateTicket = () => {
     }
   };
 
+  // Cette fonction construit dynamiquement le schéma Zod
   const buildFormSchema = () => {
-    let schemaObj: Record<string, any> = { ...baseSchema };
+    let schemaObj: Record<string, any> = {};
     
     // Garantir que les champs de base sont toujours inclus
     schemaObj.title = z.string().min(2, "Le titre doit contenir au moins 2 caractères");
@@ -131,21 +152,9 @@ const CreateTicket = () => {
     
     // Ajouter les champs configurables s'ils sont activés
     fieldConfig.forEach(field => {
-      if (field.enabled) {
-        if (field.originalName === "priority") {
-          schemaObj[field.originalName] = z.string().optional();
-        } else if (field.originalName === "assigned_to") {
-          schemaObj[field.originalName] = z.string().optional();
-        }
-      }
-    });
-    
-    // Ajouter les champs personnalisés
-    customFields.forEach(field => {
-      if (field.required) {
-        schemaObj[field.name] = z.string().min(1, `Le champ ${field.label} est requis`);
-      } else {
-        schemaObj[field.name] = z.string().optional();
+      if (field.enabled && field.originalName !== "type") {
+        // Les champs priority et assigned_to sont optionnels
+        schemaObj[field.originalName] = z.string().optional();
       }
     });
     
@@ -163,15 +172,19 @@ const CreateTicket = () => {
       description: "",
       status: "En attente",
       type: "",
-      ...(fieldConfig.find(f => f.id === "priority" && f.enabled) ? { priority: "" } : {}),
-      ...(fieldConfig.find(f => f.id === "assigned_to" && f.enabled) ? { assigned_to: "" } : {}),
     },
   });
 
   // Mettre à jour le formulaire quand la configuration des champs change
   useEffect(() => {
-    form.reset(form.getValues()); // Réinitialiser avec les valeurs actuelles pour reconstruire le formulaire
-  }, [fieldConfig, formSchema]);
+    // Récupérer les valeurs actuelles pour les conserver lors de la réinitialisation
+    const currentValues = form.getValues();
+    form.reset(currentValues);
+  }, [fieldConfig]);
+
+  const handleInputChange = (name: string, value: string) => {
+    setFormValues(prev => ({ ...prev, [name]: value }));
+  };
 
   const onSubmit = async (values: FormValues) => {
     // Vérifier les champs obligatoires
@@ -184,16 +197,13 @@ const CreateTicket = () => {
       return;
     }
     
-    // Préparer les données du formulaire
-    const formData = {
-      customFields,
-      values: {},
-      submitted: false
-    };
-    
-    // Créer ou mettre à jour le ticket
     try {
-      let result: Ticket | null;
+      // Préparer les données du formulaire avec les champs personnalisés
+      const formData = {
+        customFields,
+        values: formValues,
+        submitted: false
+      };
       
       // Créer un objet avec uniquement les champs activés dans fieldConfig
       const ticketData: Partial<Ticket> = {
@@ -204,16 +214,26 @@ const CreateTicket = () => {
         form_data: JSON.stringify(formData)
       };
       
-      // N'ajouter les champs optionnels que s'ils sont activés
+      // N'ajouter les champs optionnels que s'ils sont activés et ont une valeur
       fieldConfig.forEach(field => {
         if (field.enabled && field.originalName !== "type") {
-          // @ts-ignore - Nous savons que ces champs existent dans values si enabled est true
-          ticketData[field.originalName] = values[field.originalName] || null;
+          const fieldValue = values[field.originalName as keyof FormValues];
+          if (fieldValue) {
+            // @ts-ignore - Nous savons que ces champs existent dans values si enabled est true
+            ticketData[field.originalName] = fieldValue;
+          } else {
+            // S'assurer que les champs sans valeur sont à null
+            // @ts-ignore
+            ticketData[field.originalName] = null;
+          }
         }
       });
       
       console.log("Données à soumettre:", ticketData);
       
+      let result: Ticket | null;
+      
+      // Créer ou mettre à jour le ticket
       if (isEditing && currentTicketId) {
         result = await updateTicket(currentTicketId, ticketData);
       } else {
@@ -456,7 +476,7 @@ const CreateTicket = () => {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>{fieldConfig.find(f => f.id === "priority")?.label}</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={field.onChange} value={field.value || ""}>
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Sélectionnez une priorité" />
@@ -482,7 +502,7 @@ const CreateTicket = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>{fieldConfig.find(f => f.id === "assigned_to")?.label}</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Sélectionnez un technicien" />
@@ -502,89 +522,15 @@ const CreateTicket = () => {
                       />
                     )}
 
+                    {/* Intégration du composant CustomFormFields */}
                     {customFields.length > 0 && (
                       <div className="mt-6 border-t pt-6">
-                        <h3 className="text-lg font-medium mb-4">Champs à remplir par le technicien</h3>
-                        <div className="space-y-4">
-                          {customFields.map((field, index) => (
-                            <div key={field.id} className="border p-4 rounded-md">
-                              <div className="flex justify-between items-center mb-2">
-                                <Label className="font-medium">{field.label}</Label>
-                                <div className="flex space-x-1">
-                                  {index > 0 && (
-                                    <Button 
-                                      type="button" 
-                                      variant="ghost" 
-                                      size="sm"
-                                      onClick={() => moveFieldUp(index)}
-                                    >
-                                      <ArrowUp className="h-4 w-4 text-gray-500" />
-                                    </Button>
-                                  )}
-                                  {index < customFields.length - 1 && (
-                                    <Button 
-                                      type="button" 
-                                      variant="ghost" 
-                                      size="sm"
-                                      onClick={() => moveFieldDown(index)}
-                                    >
-                                      <ArrowDown className="h-4 w-4 text-gray-500" />
-                                    </Button>
-                                  )}
-                                  <Button 
-                                    type="button" 
-                                    variant="ghost" 
-                                    size="sm"
-                                    onClick={() => removeCustomField(field.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </div>
-                              </div>
-                              
-                              {field.type === 'input' && (
-                                <Input 
-                                  placeholder={`Le technicien saisira ${field.label.toLowerCase()}`}
-                                  disabled
-                                  className="bg-gray-50"
-                                />
-                              )}
-                              {field.type === 'textarea' && (
-                                <Textarea 
-                                  placeholder={`Le technicien saisira ${field.label.toLowerCase()}`}
-                                  disabled
-                                  className="bg-gray-50"
-                                />
-                              )}
-                              {field.type === 'select' && (
-                                <div className="space-y-2">
-                                  <Select disabled>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder={`Le technicien choisira ${field.label.toLowerCase()}`} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {field.options?.map((option, i) => (
-                                        <div key={i} className="flex justify-between items-center px-2 py-1 hover:bg-gray-50">
-                                          <span>{option}</span>
-                                        </div>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              )}
-                              
-                              <div className="flex items-center mt-2 text-sm">
-                                <Switch 
-                                  id={`form-required-${field.id}`}
-                                  checked={field.required}
-                                  onCheckedChange={() => toggleRequired(field.id)}
-                                  className="mr-2"
-                                />
-                                <Label htmlFor={`form-required-${field.id}`}>Champ requis</Label>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        <CustomFormFields 
+                          customFields={customFields}
+                          formValues={formValues}
+                          handleInputChange={handleInputChange}
+                          formSubmitted={formSubmitted}
+                        />
                       </div>
                     )}
 
