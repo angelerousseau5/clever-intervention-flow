@@ -140,7 +140,7 @@ export const useTickets = () => {
         setError(error.message);
         toast({
           title: "Erreur",
-          description: "Impossible de créer le ticket. Veuillez réessayer plus tard.",
+          description: `Impossible de créer le ticket: ${error.message}`,
           variant: "destructive",
         });
         return null;
@@ -154,8 +154,13 @@ export const useTickets = () => {
       return data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-      console.error("Erreur:", errorMessage);
+      console.error("Erreur lors de la création du ticket:", errorMessage);
       setError(errorMessage);
+      toast({
+        title: "Erreur",
+        description: `Une erreur est survenue: ${errorMessage}`,
+        variant: "destructive",
+      });
       return null;
     } finally {
       setIsLoading(false);

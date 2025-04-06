@@ -36,6 +36,7 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          form_data: string | null
           id: string
           status: string
           title: string
@@ -47,6 +48,7 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          form_data?: string | null
           id?: string
           status?: string
           title: string
@@ -58,6 +60,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          form_data?: string | null
           id?: string
           status?: string
           title?: string
