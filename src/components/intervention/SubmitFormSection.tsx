@@ -7,17 +7,15 @@ interface SubmitFormSectionProps {
   handleSubmit: () => Promise<void>;
   isSaving: boolean;
   formSubmitted: boolean;
-  customFieldsExist: boolean;
+  customFieldsExist?: boolean; // Rendu optionnel
 }
 
 export const SubmitFormSection: React.FC<SubmitFormSectionProps> = ({
   handleSubmit,
   isSaving,
   formSubmitted,
-  customFieldsExist
+  customFieldsExist = true // Valeur par défaut à true
 }) => {
-  if (!customFieldsExist) return null;
-  
   if (formSubmitted) {
     return (
       <div className="mt-6 bg-green-50 border border-green-200 rounded-md p-4">

@@ -32,7 +32,15 @@ export const CustomFormFields: React.FC<CustomFormFieldsProps> = ({
   handleInputChange,
   formSubmitted
 }) => {
-  if (customFields.length === 0) return null;
+  if (customFields.length === 0) {
+    return (
+      <div className="mt-4">
+        <p className="text-muted-foreground italic">
+          Aucun champ personnalisé n'a été ajouté.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>
