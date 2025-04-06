@@ -38,6 +38,7 @@ export type Database = {
           description: string | null
           form_data: string | null
           id: string
+          priority: string | null
           status: string
           title: string
           type: string
@@ -50,6 +51,7 @@ export type Database = {
           description?: string | null
           form_data?: string | null
           id?: string
+          priority?: string | null
           status?: string
           title: string
           type: string
@@ -62,6 +64,7 @@ export type Database = {
           description?: string | null
           form_data?: string | null
           id?: string
+          priority?: string | null
           status?: string
           title?: string
           type?: string

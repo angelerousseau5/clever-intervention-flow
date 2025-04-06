@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -122,7 +123,7 @@ export const useTickets = () => {
         created_by: user.id,
         status: ticketData.status || "En attente",
         description: ticketData.description || null,
-        priority: ticketData.priority,
+        priority: ticketData.priority || null,
         assigned_to: ticketData.assigned_to || null,
         form_data: ticketData.form_data || null
       };
