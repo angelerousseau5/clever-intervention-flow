@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, FileText, Users, Shield, Calendar, Activity } from 'lucide-react';
+import { ArrowRight, Check, FileText, Users, Shield, Calendar, Activity, BookOpen, MessageSquare, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export const AppDescription = () => {
@@ -87,13 +87,13 @@ export const AppDescription = () => {
         <div className="mt-20 space-y-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <Users className="h-8 w-8 text-primary mb-4" />
+              <MessageSquare className="h-8 w-8 text-primary mb-4" />
               <h3 className="text-xl font-semibold text-secondary mb-3">
-                Collaboration Efficace
+                Communication Intégrée
               </h3>
               <p className="text-gray-600">
-                Facilitez la communication entre vos équipes techniques et vos clients avec un 
-                système centralisé où toutes les informations sont accessibles en temps réel.
+                Facilitez les échanges entre les techniciens et les clients avec des commentaires 
+                en temps réel et des notifications automatiques à chaque étape du processus.
               </p>
             </div>
             
@@ -109,13 +109,13 @@ export const AppDescription = () => {
             </div>
             
             <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <Calendar className="h-8 w-8 text-primary mb-4" />
+              <Settings className="h-8 w-8 text-primary mb-4" />
               <h3 className="text-xl font-semibold text-secondary mb-3">
-                Suivi Chronologique
+                Personnalisation Avancée
               </h3>
               <p className="text-gray-600">
-                Gardez une trace complète de toutes les actions effectuées sur chaque 
-                intervention avec horodatage et identification des intervenants.
+                Adaptez InterFlow à vos processus métier avec des formulaires sur mesure, 
+                des champs personnalisés et des workflows configurables selon vos besoins.
               </p>
             </div>
           </div>
@@ -188,6 +188,61 @@ export const AppDescription = () => {
                   <p className="text-center text-gray-600">{item.description}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-20">
+          <div className="bg-accent rounded-lg p-8">
+            <div className="flex flex-col md:flex-row items-start gap-8">
+              <div className="md:w-1/2">
+                <BookOpen className="h-10 w-10 text-primary mb-4" />
+                <h3 className="text-2xl font-bold text-secondary mb-4">
+                  InterFlow en Détail
+                </h3>
+                <p className="text-gray-700 mb-6">
+                  Notre plateforme a été conçue pour répondre aux besoins spécifiques des entreprises 
+                  de services techniques qui cherchent à optimiser leur processus d'intervention.
+                </p>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
+                    <span>
+                      <strong>Interface intuitive</strong> - Prenez en main la plateforme sans formation complexe
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
+                    <span>
+                      <strong>Rapports détaillés</strong> - Analysez vos performances avec des statistiques avancées
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
+                    <span>
+                      <strong>Intégration facile</strong> - Connectez InterFlow à vos outils existants
+                    </span>
+                  </li>
+                </ul>
+              </div>
+              <div className="md:w-1/2 bg-white p-6 rounded-lg shadow-sm">
+                <h4 className="text-xl font-semibold text-secondary mb-4">Témoignage Client</h4>
+                <p className="italic text-gray-600 mb-4">
+                  "Depuis que nous utilisons InterFlow, nos techniciens gagnent près de 2 heures par jour 
+                  sur les tâches administratives. Les formulaires dynamiques nous permettent de collecter 
+                  exactement les informations dont nous avons besoin, et nos clients apprécient la 
+                  transparence du processus."
+                </p>
+                <div className="flex items-center">
+                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 mr-3">
+                    JP
+                  </div>
+                  <div>
+                    <p className="font-medium">Jean-Philippe Durand</p>
+                    <p className="text-sm text-gray-500">Directeur technique, Maintenance Pro</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
