@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,6 +41,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { CustomFormFields } from "@/components/intervention/CustomFormFields";
 import { SubmitFormSection } from "@/components/intervention/SubmitFormSection";
+import { CustomField } from "@/types/formTypes";
 
 const baseSchema = {
   title: z.string().min(2, "Le titre doit contenir au moins 2 caractères"),
@@ -49,16 +49,6 @@ const baseSchema = {
   status: z.string().default("En attente"),
   type: z.string().min(1, "Le type est requis"),
 };
-
-interface CustomField {
-  id: string;
-  type: 'select' | 'input' | 'textarea';
-  name: string; 
-  label: string;
-  required: boolean;
-  options?: string[]; // Pour les champs select
-  defaultValue?: string;
-}
 
 type FieldConfigItem = {
   id: string;
@@ -101,7 +91,6 @@ const CreateTicket = () => {
     const ticket = await getTicketById(id);
     
     if (ticket) {
-      // Mettre à jour le formulaire avec les valeurs du ticket
       const formDefaultValues: any = {
         title: ticket.title,
         description: ticket.description || "",
@@ -109,7 +98,6 @@ const CreateTicket = () => {
         type: ticket.type,
       };
       
-      // N'ajouter les champs optionnels que s'ils existent dans le ticket
       if (ticket.priority) {
         formDefaultValues.priority = ticket.priority;
       }
@@ -120,7 +108,6 @@ const CreateTicket = () => {
       
       form.reset(formDefaultValues);
       
-      // Charger les champs personnalisés s'ils existent
       if (ticket.form_data) {
         try {
           const formData = JSON.parse(ticket.form_data);
@@ -140,20 +127,16 @@ const CreateTicket = () => {
     }
   };
 
-  // Cette fonction construit dynamiquement le schéma Zod
   const buildFormSchema = () => {
     let schemaObj: Record<string, any> = {};
     
-    // Garantir que les champs de base sont toujours inclus
     schemaObj.title = z.string().min(2, "Le titre doit contenir au moins 2 caractères");
     schemaObj.description = z.string().min(10, "La description doit contenir au moins 10 caractères");
     schemaObj.status = z.string().default("En attente");
     schemaObj.type = z.string().min(1, "Le type est requis");
     
-    // Ajouter les champs configurables s'ils sont activés
     fieldConfig.forEach(field => {
       if (field.enabled && field.originalName !== "type") {
-        // Les champs priority et assigned_to sont optionnels
         schemaObj[field.originalName] = z.string().optional();
       }
     });
@@ -161,7 +144,6 @@ const CreateTicket = () => {
     return z.object(schemaObj);
   };
 
-  // Construire le schéma dynamiquement
   const formSchema = buildFormSchema();
   type FormValues = z.infer<typeof formSchema>;
 
@@ -175,9 +157,7 @@ const CreateTicket = () => {
     },
   });
 
-  // Mettre à jour le formulaire quand la configuration des champs change
   useEffect(() => {
-    // Récupérer les valeurs actuelles pour les conserver lors de la réinitialisation
     const currentValues = form.getValues();
     form.reset(currentValues);
   }, [fieldConfig]);
@@ -187,7 +167,6 @@ const CreateTicket = () => {
   };
 
   const onSubmit = async (values: FormValues) => {
-    // Vérifier les champs obligatoires
     if (!values.title || !values.type) {
       toast({
         title: "Erreur",
@@ -198,14 +177,12 @@ const CreateTicket = () => {
     }
     
     try {
-      // Préparer les données du formulaire avec les champs personnalisés
       const formData = {
         customFields,
         values: formValues,
         submitted: false
       };
       
-      // Créer un objet avec uniquement les champs activés dans fieldConfig
       const ticketData: Partial<Ticket> = {
         title: values.title,
         description: values.description,
@@ -214,16 +191,12 @@ const CreateTicket = () => {
         form_data: JSON.stringify(formData)
       };
       
-      // N'ajouter les champs optionnels que s'ils sont activés et ont une valeur
       fieldConfig.forEach(field => {
         if (field.enabled && field.originalName !== "type") {
           const fieldValue = values[field.originalName as keyof FormValues];
           if (fieldValue) {
-            // @ts-ignore - Nous savons que ces champs existent dans values si enabled est true
             ticketData[field.originalName] = fieldValue;
           } else {
-            // S'assurer que les champs sans valeur sont à null
-            // @ts-ignore
             ticketData[field.originalName] = null;
           }
         }
@@ -233,7 +206,6 @@ const CreateTicket = () => {
       
       let result: Ticket | null;
       
-      // Créer ou mettre à jour le ticket
       if (isEditing && currentTicketId) {
         result = await updateTicket(currentTicketId, ticketData);
       } else {
@@ -522,7 +494,6 @@ const CreateTicket = () => {
                       />
                     )}
 
-                    {/* Intégration du composant CustomFormFields */}
                     {customFields.length > 0 && (
                       <div className="mt-6 border-t pt-6">
                         <CustomFormFields 

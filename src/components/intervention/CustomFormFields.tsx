@@ -10,14 +10,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-
-interface CustomField {
-  name: string;
-  label: string;
-  type: string;
-  value: string;
-  options?: string[];
-}
+import { CustomField } from "@/types/formTypes";
 
 interface CustomFormFieldsProps {
   customFields: CustomField[];
