@@ -1,268 +1,220 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Check, FileText, Users, Shield, Calendar, Activity, BookOpen, MessageSquare, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle, Users, FileText, Clock } from "lucide-react";
 
 export const AppDescription = () => {
   return (
-    <div className="py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="py-16 bg-slate-50">
+      <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-secondary mb-4">
-            Présentation Complète d'InterFlow
+          <h2 className="text-3xl font-bold text-primary mb-4">
+            InterFlow : La Solution Complète de Gestion des Interventions
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Découvrez comment notre plateforme révolutionne la gestion des interventions techniques
-            et optimise la collaboration entre les différents intervenants.
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Une plateforme tout-en-un pour gérer, suivre et optimiser les interventions techniques de votre entreprise.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-16">
+        <div className="grid md:grid-cols-2 gap-12 mb-16">
           <div>
-            <h3 className="text-2xl font-semibold text-primary mb-6">
-              Gestion Simplifiée des Interventions
+            <h3 className="text-2xl font-semibold mb-6 text-secondary">
+              Fonctionnalités Principales
             </h3>
             <ul className="space-y-4">
-              {[
-                "Création et suivi des interventions techniques en temps réel",
-                "Formulaires personnalisables selon vos besoins spécifiques",
-                "Assignation des interventions aux techniciens disponibles",
-                "Tableaux de bord intuitifs pour une vision globale"
-              ].map((item, index) => (
-                <li key={index} className="flex items-start">
-                  <Check className="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
-                  <span>{item}</span>
-                </li>
-              ))}
+              <li className="flex gap-3">
+                <CheckCircle className="h-6 w-6 text-green-500 shrink-0" />
+                <div>
+                  <span className="font-medium">Création de tickets</span>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Créez facilement des tickets d'intervention avec toutes les informations nécessaires et des champs personnalisables selon vos besoins.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="h-6 w-6 text-green-500 shrink-0" />
+                <div>
+                  <span className="font-medium">Formulaires adaptés</span>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Générez des formulaires d'intervention adaptés à chaque type de ticket, accessibles par vos clients ou techniciens via un lien unique.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="h-6 w-6 text-green-500 shrink-0" />
+                <div>
+                  <span className="font-medium">Suivi en temps réel</span>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Suivez l'état de vos interventions en temps réel avec des mises à jour instantanées et des notifications personnalisables.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="h-6 w-6 text-green-500 shrink-0" />
+                <div>
+                  <span className="font-medium">Rapports et exports PDF</span>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Générez des rapports détaillés de vos interventions et exportez-les en PDF pour vos clients ou votre archivage.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="h-6 w-6 text-green-500 shrink-0" />
+                <div>
+                  <span className="font-medium">Tableau de bord analytique</span>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Visualisez les performances de votre service technique avec un tableau de bord complet et des indicateurs clés.
+                  </p>
+                </div>
+              </li>
             </ul>
-            
-            <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-100">
-              <h4 className="font-medium text-secondary mb-2">Accès Client Simplifié</h4>
-              <p className="text-gray-600 mb-4">
-                Vos clients accèdent à leurs formulaires d'intervention sans inscription préalable, 
-                via un système sécurisé d'identification par e-mail.
-              </p>
-              <Link to="/intervention">
-                <Button variant="outline" size="sm">
-                  Tester l'accès client
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
           </div>
 
-          <div className="relative p-6 bg-accent rounded-lg overflow-hidden">
-            <div className="relative z-10">
-              <FileText className="h-10 w-10 text-primary mb-4" />
-              <h3 className="text-xl font-semibold text-secondary mb-3">
-                Formulaires Intelligents
-              </h3>
-              <p className="text-gray-700 mb-4">
-                Nos formulaires d'intervention sont entièrement personnalisables avec différents 
-                types de champs (texte, sélection, zone de texte) et peuvent être préremplis avec 
-                des informations existantes.
-              </p>
-              <ul className="space-y-2 mb-6">
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Export PDF automatique</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Validation des données</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Signatures électroniques</span>
-                </li>
-              </ul>
+          <div>
+            <h3 className="text-2xl font-semibold mb-6 text-secondary">
+              Avantages Clés
+            </h3>
+            <ul className="space-y-4">
+              <li className="flex gap-3">
+                <CheckCircle className="h-6 w-6 text-green-500 shrink-0" />
+                <div>
+                  <span className="font-medium">Interface intuitive</span>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Une interface moderne et facile à utiliser, accessible sur tous vos appareils, pour une expérience utilisateur optimale.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="h-6 w-6 text-green-500 shrink-0" />
+                <div>
+                  <span className="font-medium">Sécurité avancée</span>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Protégez vos données avec une authentification sécurisée et des contrôles d'accès granulaires pour chaque utilisateur.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="h-6 w-6 text-green-500 shrink-0" />
+                <div>
+                  <span className="font-medium">Personnalisation complète</span>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Adaptez l'application à vos processus spécifiques avec des champs, des statuts et des workflows personnalisables.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="h-6 w-6 text-green-500 shrink-0" />
+                <div>
+                  <span className="font-medium">Intégration transparente</span>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Intégrez facilement InterFlow avec vos outils existants grâce à notre API ouverte et nos connecteurs prédéfinis.
+                  </p>
+                </div>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="h-6 w-6 text-green-500 shrink-0" />
+                <div>
+                  <span className="font-medium">Support réactif</span>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Bénéficiez d'un support technique dédié et d'une documentation complète pour vous accompagner à chaque étape.
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Témoignage Client */}
+        <div className="bg-white shadow-md rounded-lg p-8 mb-16">
+          <div className="flex items-start gap-4">
+            <div className="bg-blue-100 rounded-full p-3">
+              <Users className="h-8 w-8 text-blue-600" />
             </div>
-            <div className="absolute bottom-0 right-0 opacity-10">
-              <FileText className="h-48 w-48 text-primary" />
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Ce que nos clients disent</h3>
+              <blockquote className="italic text-gray-600 border-l-4 border-primary pl-4 mb-4">
+                "InterFlow a révolutionné notre gestion des interventions techniques. Nous avons réduit de 40% le temps de traitement des tickets et amélioré la satisfaction de nos clients de manière significative. L'interface intuitive permet à nos techniciens de se concentrer sur leur travail plutôt que sur l'administration."
+              </blockquote>
+              <p className="font-medium">Jean Dupont, Directeur Technique - TechServices SAS</p>
             </div>
           </div>
         </div>
 
-        <div className="mt-20 space-y-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <MessageSquare className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold text-secondary mb-3">
-                Communication Intégrée
-              </h3>
-              <p className="text-gray-600">
-                Facilitez les échanges entre les techniciens et les clients avec des commentaires 
-                en temps réel et des notifications automatiques à chaque étape du processus.
-              </p>
-            </div>
-            
-            <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <Shield className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold text-secondary mb-3">
-                Sécurité Renforcée
-              </h3>
-              <p className="text-gray-600">
-                Protégez vos données sensibles avec notre système d'authentification 
-                avancé et nos contrôles d'accès granulaires pour chaque intervention.
-              </p>
-            </div>
-            
-            <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <Settings className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold text-secondary mb-3">
-                Personnalisation Avancée
-              </h3>
-              <p className="text-gray-600">
-                Adaptez InterFlow à vos processus métier avec des formulaires sur mesure, 
-                des champs personnalisés et des workflows configurables selon vos besoins.
-              </p>
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-8 rounded-lg">
-            <div className="flex flex-col md:flex-row items-center justify-between">
-              <div className="mb-6 md:mb-0 md:mr-6">
-                <h3 className="text-2xl font-bold text-secondary mb-2">
-                  Prêt à Optimiser vos Interventions ?
-                </h3>
-                <p className="text-gray-700">
-                  Rejoignez les entreprises qui ont déjà simplifié leur processus de gestion des interventions.
-                </p>
+        {/* Statistiques */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <Card>
+            <CardContent className="flex flex-col items-center p-6">
+              <div className="bg-primary/10 rounded-full p-3 mb-4">
+                <FileText className="h-8 w-8 text-primary" />
               </div>
-              <div className="flex space-x-4">
-                <Link to="/register">
-                  <Button className="gap-2">
-                    Créer un Compte
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link to="/login">
-                  <Button variant="outline">
-                    Se Connecter
-                  </Button>
-                </Link>
+              <h3 className="text-4xl font-bold mb-2">15,000+</h3>
+              <p className="text-gray-600 text-center">Interventions gérées mensuellement</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex flex-col items-center p-6">
+              <div className="bg-primary/10 rounded-full p-3 mb-4">
+                <Users className="h-8 w-8 text-primary" />
               </div>
+              <h3 className="text-4xl font-bold mb-2">500+</h3>
+              <p className="text-gray-600 text-center">Entreprises nous font confiance</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex flex-col items-center p-6">
+              <div className="bg-primary/10 rounded-full p-3 mb-4">
+                <Clock className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-4xl font-bold mb-2">-45%</h3>
+              <p className="text-gray-600 text-center">Réduction du temps de traitement</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Comment ça marche */}
+        <div className="text-center mb-12">
+          <h2 className="text-2xl font-bold text-secondary mb-8">Comment fonctionne InterFlow ?</h2>
+          <div className="grid md:grid-cols-4 gap-8">
+            <div className="flex flex-col items-center">
+              <div className="bg-secondary/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                <span className="text-2xl font-bold text-secondary">1</span>
+              </div>
+              <h4 className="font-semibold mb-2">Créez un ticket</h4>
+              <p className="text-gray-600 text-sm">Définissez le type d'intervention et renseignez les informations nécessaires.</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="bg-secondary/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                <span className="text-2xl font-bold text-secondary">2</span>
+              </div>
+              <h4 className="font-semibold mb-2">Partagez le formulaire</h4>
+              <p className="text-gray-600 text-sm">Envoyez le lien au client ou technicien pour qu'il remplisse le formulaire d'intervention.</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="bg-secondary/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                <span className="text-2xl font-bold text-secondary">3</span>
+              </div>
+              <h4 className="font-semibold mb-2">Suivez l'avancement</h4>
+              <p className="text-gray-600 text-sm">Visualisez le statut des interventions en temps réel sur votre tableau de bord.</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="bg-secondary/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                <span className="text-2xl font-bold text-secondary">4</span>
+              </div>
+              <h4 className="font-semibold mb-2">Générez des rapports</h4>
+              <p className="text-gray-600 text-sm">Exportez les données en PDF et analysez les performances de votre service.</p>
             </div>
           </div>
         </div>
-        
-        <div className="mt-20">
-          <h3 className="text-2xl font-semibold text-secondary text-center mb-10">
-            Le Cycle Complet de Gestion des Interventions
-          </h3>
-          <div className="relative">
-            <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -translate-y-1/2 hidden md:block"></div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              {[
-                {
-                  step: 1,
-                  title: "Création du ticket",
-                  description: "Créez un ticket d'intervention avec tous les détails nécessaires",
-                  icon: FileText
-                },
-                {
-                  step: 2,
-                  title: "Personnalisation du formulaire",
-                  description: "Ajoutez des champs spécifiques selon le type d'intervention",
-                  icon: FileText
-                },
-                {
-                  step: 3,
-                  title: "Intervention sur site",
-                  description: "Le technicien remplit le formulaire lors de son intervention",
-                  icon: Users
-                },
-                {
-                  step: 4,
-                  title: "Validation et archivage",
-                  description: "L'intervention est validée et archivée pour référence future",
-                  icon: Check
-                }
-              ].map((item, index) => (
-                <div key={index} className="relative z-10 flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg mb-4">
-                    {item.step}
-                  </div>
-                  <h4 className="text-lg font-medium text-secondary mb-2">{item.title}</h4>
-                  <p className="text-center text-gray-600">{item.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        
-        <div className="mt-20">
-          <div className="bg-accent rounded-lg p-8">
-            <div className="flex flex-col md:flex-row items-start gap-8">
-              <div className="md:w-1/2">
-                <BookOpen className="h-10 w-10 text-primary mb-4" />
-                <h3 className="text-2xl font-bold text-secondary mb-4">
-                  InterFlow en Détail
-                </h3>
-                <p className="text-gray-700 mb-6">
-                  Notre plateforme a été conçue pour répondre aux besoins spécifiques des entreprises 
-                  de services techniques qui cherchent à optimiser leur processus d'intervention.
-                </p>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
-                    <span>
-                      <strong>Interface intuitive</strong> - Prenez en main la plateforme sans formation complexe
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
-                    <span>
-                      <strong>Rapports détaillés</strong> - Analysez vos performances avec des statistiques avancées
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="h-5 w-5 text-green-500 mt-1 mr-2 flex-shrink-0" />
-                    <span>
-                      <strong>Intégration facile</strong> - Connectez InterFlow à vos outils existants
-                    </span>
-                  </li>
-                </ul>
-              </div>
-              <div className="md:w-1/2 bg-white p-6 rounded-lg shadow-sm">
-                <h4 className="text-xl font-semibold text-secondary mb-4">Témoignage Client</h4>
-                <p className="italic text-gray-600 mb-4">
-                  "Depuis que nous utilisons InterFlow, nos techniciens gagnent près de 2 heures par jour 
-                  sur les tâches administratives. Les formulaires dynamiques nous permettent de collecter 
-                  exactement les informations dont nous avons besoin, et nos clients apprécient la 
-                  transparence du processus."
-                </p>
-                <div className="flex items-center">
-                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 mr-3">
-                    JP
-                  </div>
-                  <div>
-                    <p className="font-medium">Jean-Philippe Durand</p>
-                    <p className="text-sm text-gray-500">Directeur technique, Maintenance Pro</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="mt-20 text-center">
-          <Activity className="h-10 w-10 text-primary mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-secondary mb-4">
-            Statistiques en Temps Réel
-          </h3>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-            Suivez les performances de vos équipes et l'état de vos interventions grâce 
-            à nos tableaux de bord analytiques avancés.
-          </p>
-          <div className="inline-block">
-            <Link to="/register">
-              <Button size="lg" className="gap-2">
-                Découvrir la Plateforme
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+
+        {/* CTA */}
+        <div className="text-center">
+          <h3 className="text-xl font-semibold mb-4">Prêt à optimiser la gestion de vos interventions ?</h3>
+          <div className="flex flex-wrap justify-center gap-4">
+            <a href="/register" className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-white font-medium hover:bg-primary/90 transition-colors">
+              Créer un compte
+            </a>
+            <a href="/intervention" className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-6 py-3 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+              Essayer le formulaire d'intervention
+            </a>
           </div>
         </div>
       </div>
