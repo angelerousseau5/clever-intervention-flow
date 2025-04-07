@@ -13,14 +13,7 @@ import { InterventionAccessInfo } from "@/components/intervention/InterventionAc
 import { SubmitFormSection } from "@/components/intervention/SubmitFormSection";
 import { generateInterventionPDF } from "@/components/intervention/PDFGenerator";
 import { useNavigate } from "react-router-dom";
-
-interface CustomField {
-  name: string;
-  label: string;
-  type: string;
-  value: string;
-  options?: string[];
-}
+import { CustomField } from "@/types/formTypes";
 
 const InterventionForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -84,7 +77,17 @@ const InterventionForm = () => {
           try {
             const parsedFormData = JSON.parse(typedData.form_data);
             if (parsedFormData.customFields) {
-              setCustomFields(parsedFormData.customFields);
+              // Convert the custom fields to match the expected type
+              const formattedFields = parsedFormData.customFields.map((field: any) => ({
+                id: field.id || field.name,
+                type: field.type,
+                name: field.name,
+                label: field.label,
+                required: field.required !== undefined ? field.required : false,
+                options: field.options,
+                defaultValue: field.value || field.defaultValue,
+              }));
+              setCustomFields(formattedFields);
             }
             if (parsedFormData.values) {
               setFormValues(parsedFormData.values);
