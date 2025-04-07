@@ -2,6 +2,7 @@
 import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
+import { AppDescription } from "@/components/AppDescription";
 import { Footer } from "@/components/Footer";
 
 const Index = () => {
@@ -11,6 +12,7 @@ const Index = () => {
       <div className="flex-grow">
         <Hero />
         <Features />
+        <AppDescription />
       </div>
       <Footer />
     </div>
