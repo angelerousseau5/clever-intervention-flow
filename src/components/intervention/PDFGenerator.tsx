@@ -2,16 +2,11 @@
 import { Ticket } from "@/hooks/useTickets";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import { CustomField } from "@/types/formTypes";
 
 interface PDFGeneratorOptions {
   intervention: Ticket;
-  customFields: Array<{
-    name: string;
-    label: string;
-    type: string;
-    value: string;
-    options?: string[];
-  }>;
+  customFields: CustomField[];
   formValues: Record<string, string>;
   formSubmitted: boolean;
   accessInfo: any;
