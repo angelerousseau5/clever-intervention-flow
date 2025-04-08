@@ -30,7 +30,7 @@ export function useTickets() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return data as Ticket[] || [];
   };
 
   const fetchTicketsByGroupId = async (groupId: string): Promise<Ticket[]> => {
@@ -41,7 +41,7 @@ export function useTickets() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return data as Ticket[] || [];
   };
 
   const { data: tickets, isLoading: isLoadingTickets } = useQuery({
@@ -60,7 +60,7 @@ export function useTickets() {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as Ticket;
     } catch (error) {
       setError(error as Error);
       return null;
@@ -90,6 +90,16 @@ export function useTickets() {
           throw new Error("Utilisateur non connecté");
         }
 
+        // Ensure title field is provided as it's required
+        if (!ticket.title) {
+          throw new Error("Le titre est requis");
+        }
+
+        // Ensure type field is provided as it's required
+        if (!ticket.type) {
+          ticket.type = "Non spécifié";
+        }
+
         const { data, error } = await supabase
           .from('tickets')
           .insert({
@@ -100,7 +110,7 @@ export function useTickets() {
           .single();
 
         if (error) throw error;
-        return data;
+        return data as Ticket;
       } catch (error) {
         setError(error as Error);
         throw error;
@@ -126,7 +136,7 @@ export function useTickets() {
           .single();
 
         if (error) throw error;
-        return data;
+        return data as Ticket;
       } catch (error) {
         setError(error as Error);
         throw error;
@@ -190,8 +200,19 @@ export function useTickets() {
     }
   };
 
+  // Add getTickets function that was missing
+  const getTickets = async (): Promise<Ticket[]> => {
+    try {
+      return await fetchTickets();
+    } catch (error) {
+      console.error('Error fetching tickets:', error);
+      return [];
+    }
+  };
+
   return {
     tickets,
+    getTickets, // Add the exported getTickets function
     getTicketById,
     getTicketsByGroupId,
     createTicket,
