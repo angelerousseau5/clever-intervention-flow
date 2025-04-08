@@ -19,8 +19,9 @@ export interface Ticket {
   group_id: string | null;
 }
 
-// Define the type for Supabase ticket response
-type SupabaseTicket = {
+// Define the type for Supabase ticket response with explicit properties
+// to avoid deep type inference issues
+interface SupabaseTicket {
   id: string;
   title: string;
   description: string | null;
@@ -33,7 +34,7 @@ type SupabaseTicket = {
   updated_at: string;
   form_data: string | null;
   group_id?: string | null;
-};
+}
 
 export function useTickets() {
   const queryClient = useQueryClient();
@@ -48,8 +49,11 @@ export function useTickets() {
 
     if (error) throw error;
     
+    // Explicitly cast the data to SupabaseTicket[] to avoid type inference issues
+    const typedData = data as SupabaseTicket[];
+    
     // Map the data to ensure all required Ticket properties are included
-    return (data || []).map((ticket: SupabaseTicket) => ({
+    return (typedData || []).map((ticket) => ({
       ...ticket,
       group_id: ticket.group_id || null
     } as Ticket));
@@ -64,8 +68,11 @@ export function useTickets() {
 
     if (error) throw error;
     
+    // Explicitly cast the data to SupabaseTicket[] to avoid type inference issues
+    const typedData = data as SupabaseTicket[];
+    
     // Map the data to ensure all required Ticket properties are included
-    return (data || []).map((ticket: SupabaseTicket) => ({
+    return (typedData || []).map((ticket) => ({
       ...ticket,
       group_id: ticket.group_id || null
     } as Ticket));
@@ -88,9 +95,12 @@ export function useTickets() {
 
       if (error) throw error;
       
+      // Explicitly cast the data to SupabaseTicket to avoid type issues
+      const typedData = data as SupabaseTicket;
+      
       return {
-        ...data,
-        group_id: data.group_id || null
+        ...typedData,
+        group_id: typedData.group_id || null
       } as Ticket;
     } catch (error) {
       setError(error as Error);
@@ -132,7 +142,7 @@ export function useTickets() {
         }
 
         // Create insert object with required fields 
-        const insertData = {
+        const insertData: Record<string, any> = {
           created_by: userId,
           title: ticket.title,
           type: ticket.type,
@@ -141,13 +151,10 @@ export function useTickets() {
           priority: ticket.priority,
           assigned_to: ticket.assigned_to,
           form_data: ticket.form_data,
-          // Don't include group_id in the main insert data
         };
         
-        // Only add group_id if it's provided to avoid type errors
+        // Add group_id to insertData if it exists
         if (ticket.group_id) {
-          // @ts-ignore - We need to use ts-ignore here because the Supabase schema
-          // doesn't include group_id but we're using it in our application
           insertData.group_id = ticket.group_id;
         }
 
@@ -159,9 +166,12 @@ export function useTickets() {
 
         if (error) throw error;
         
+        // Explicitly cast the data to SupabaseTicket to avoid type issues
+        const typedData = data as SupabaseTicket;
+        
         return {
-          ...data,
-          group_id: data.group_id || null
+          ...typedData,
+          group_id: typedData.group_id || null
         } as Ticket;
       } catch (error) {
         setError(error as Error);
