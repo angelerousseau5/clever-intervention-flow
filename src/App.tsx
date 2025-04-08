@@ -15,6 +15,8 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import Interventions from "./pages/Interventions";
 import CreateTicket from "./pages/CreateTicket";
+import RoutePage from "./pages/Route";
+import CreateRoute from "./pages/CreateRoute";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard/interventions" element={<ProtectedRoute><Interventions /></ProtectedRoute>} />
             <Route path="/dashboard/create-ticket" element={<ProtectedRoute><CreateTicket /></ProtectedRoute>} />
+            <Route path="/dashboard/route" element={<ProtectedRoute><RoutePage /></ProtectedRoute>} />
+            <Route path="/dashboard/create-route" element={<ProtectedRoute><CreateRoute /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />

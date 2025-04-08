@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LayoutDashboard, FileText, Plus, LogOut, Users } from "lucide-react";
+import { Menu, X, LayoutDashboard, FileText, Plus, LogOut, Users, MapPin } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -21,6 +21,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Interventions", path: "/dashboard/interventions", icon: FileText },
     { name: "Nouveau ticket", path: "/dashboard/create-ticket", icon: Plus },
     { name: "Groupes", path: "/dashboard/groups", icon: Users },
+    { name: "Routes", path: "/dashboard/route", icon: MapPin },
   ];
 
   const handleLogout = async () => {

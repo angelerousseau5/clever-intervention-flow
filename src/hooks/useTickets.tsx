@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +19,7 @@ export interface Ticket {
 }
 
 // Define the type for Supabase ticket response to prevent deep type inference
-type SupabaseTicket = Database['public']['Tables']['tickets']['Row'];
+type SupabaseTicket = Database['public']['Tables']['tickets']['Row'] & { group_id?: string | null };
 
 export function useTickets() {
   const queryClient = useQueryClient();
@@ -34,7 +33,12 @@ export function useTickets() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data as SupabaseTicket[]) || [];
+    
+    // Map the data to ensure all required Ticket properties are included
+    return (data || []).map(ticket => ({
+      ...ticket,
+      group_id: ticket.group_id || null
+    } as Ticket));
   };
 
   const fetchTicketsByGroupId = async (groupId: string): Promise<Ticket[]> => {
@@ -45,7 +49,12 @@ export function useTickets() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data as SupabaseTicket[]) || [];
+    
+    // Map the data to ensure all required Ticket properties are included
+    return (data || []).map(ticket => ({
+      ...ticket,
+      group_id: ticket.group_id || null
+    } as Ticket));
   };
 
   const { data: tickets, isLoading: isLoadingTickets } = useQuery({
@@ -64,7 +73,11 @@ export function useTickets() {
         .single();
 
       if (error) throw error;
-      return data as Ticket;
+      
+      return {
+        ...data,
+        group_id: data.group_id || null
+      } as Ticket;
     } catch (error) {
       setError(error as Error);
       return null;
@@ -109,8 +122,9 @@ export function useTickets() {
           ...ticket,
           created_by: userId,
           title: ticket.title,
-          type: ticket.type
-        } as SupabaseTicket;
+          type: ticket.type,
+          status: ticket.status || "Nouveau"
+        };
 
         const { data, error } = await supabase
           .from('tickets')
@@ -119,7 +133,11 @@ export function useTickets() {
           .single();
 
         if (error) throw error;
-        return data as Ticket;
+        
+        return {
+          ...data,
+          group_id: data.group_id || null
+        } as Ticket;
       } catch (error) {
         setError(error as Error);
         throw error;
@@ -230,4 +248,3 @@ export function useTickets() {
     error,
   };
 }
-
