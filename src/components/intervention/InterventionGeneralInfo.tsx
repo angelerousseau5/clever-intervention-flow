@@ -1,6 +1,11 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Ticket } from "@/hooks/useTickets";
+
+interface Group {
+  id: string;
+  name: string;
+}
 
 interface InterventionGeneralInfoProps {
   intervention: Ticket;
@@ -9,6 +14,26 @@ interface InterventionGeneralInfoProps {
 export const InterventionGeneralInfo: React.FC<InterventionGeneralInfoProps> = ({ 
   intervention 
 }) => {
+  const [groupName, setGroupName] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Récupérer le nom du groupe si l'intervention a un groupe_id
+    if (intervention.group_id) {
+      const fetchGroupName = () => {
+        const storedGroups = localStorage.getItem('groups');
+        if (storedGroups) {
+          const groups: Group[] = JSON.parse(storedGroups);
+          const group = groups.find(g => g.id === intervention.group_id);
+          if (group) {
+            setGroupName(group.name);
+          }
+        }
+      };
+      
+      fetchGroupName();
+    }
+  }, [intervention.group_id]);
+
   return (
     <div>
       <h2 className="text-lg font-semibold">Informations générales</h2>
@@ -17,10 +42,14 @@ export const InterventionGeneralInfo: React.FC<InterventionGeneralInfoProps> = (
           <p className="text-sm text-gray-500">Titre</p>
           <p className="font-medium">{intervention.title}</p>
         </div>
-        <div className="p-3 bg-gray-50 rounded">
-          <p className="text-sm text-gray-500">Type</p>
-          <p className="font-medium">{intervention.type}</p>
-        </div>
+        
+        {groupName && (
+          <div className="p-3 bg-gray-50 rounded">
+            <p className="text-sm text-gray-500">Groupe</p>
+            <p className="font-medium">{groupName}</p>
+          </div>
+        )}
+
         <div className="p-3 bg-gray-50 rounded">
           <p className="text-sm text-gray-500">Statut</p>
           <p className="font-medium">
@@ -36,10 +65,6 @@ export const InterventionGeneralInfo: React.FC<InterventionGeneralInfoProps> = (
               {intervention.status}
             </span>
           </p>
-        </div>
-        <div className="p-3 bg-gray-50 rounded">
-          <p className="text-sm text-gray-500">Assigné à</p>
-          <p className="font-medium">{intervention.assigned_to || "Non assigné"}</p>
         </div>
       </div>
     </div>

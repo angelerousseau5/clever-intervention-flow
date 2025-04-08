@@ -1,263 +1,203 @@
 
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { toast } from "@/components/ui/use-toast";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Ticket {
   id: string;
   title: string;
   description: string | null;
   status: string;
-  type: string;
-  priority?: string | null;
-  assigned_to?: string | null;
+  type: string | null;
+  priority: string | null;
+  assigned_to: string | null;
+  created_by: string;
   created_at: string;
   updated_at: string;
-  created_by: string;
-  form_data?: string | null;
+  form_data: string | null;
+  group_id: string | null;
 }
 
-export const useTickets = () => {
+export function useTickets() {
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const [error, setError] = useState<Error | null>(null);
 
-  const getTickets = async (): Promise<Ticket[]> => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      if (!user) {
-        console.log("Utilisateur non connecté");
-        return [];
-      }
+  const fetchTickets = async (): Promise<Ticket[]> => {
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      const { data, error } = await supabase
-        .from('tickets')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error("Erreur lors de la récupération des tickets:", error);
-        setError(error.message);
-        toast({
-          title: "Erreur",
-          description: "Impossible de récupérer les tickets. Veuillez réessayer plus tard.",
-          variant: "destructive",
-        });
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-      console.error("Erreur lors de la récupération des tickets:", errorMessage);
-      setError(errorMessage);
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
+    if (error) throw error;
+    return data || [];
   };
+
+  const fetchTicketsByGroupId = async (groupId: string): Promise<Ticket[]> => {
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  };
+
+  const { data: tickets, isLoading: isLoadingTickets } = useQuery({
+    queryKey: ['tickets'],
+    queryFn: fetchTickets,
+  });
 
   const getTicketById = async (id: string): Promise<Ticket | null> => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      if (!user && !id) return null;
-
       const { data, error } = await supabase
         .from('tickets')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (error) {
-        console.error("Erreur lors de la récupération du ticket:", error);
-        setError(error.message);
-        return null;
-      }
-
+      if (error) throw error;
       return data;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-      console.error("Erreur:", errorMessage);
-      setError(errorMessage);
+      setError(error as Error);
       return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const createTicket = async (ticketData: Partial<Ticket>): Promise<Ticket | null> => {
+  const getTicketsByGroupId = async (groupId: string): Promise<Ticket[]> => {
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      if (!user) {
-        console.log("Utilisateur non connecté");
-        return null;
-      }
-
-      // Vérification des champs requis
-      if (!ticketData.title || !ticketData.type) {
-        const missingFields = [];
-        if (!ticketData.title) missingFields.push("titre");
-        if (!ticketData.type) missingFields.push("type");
-        
-        const errorMsg = `Champs requis manquants: ${missingFields.join(", ")}`;
-        toast({
-          title: "Erreur",
-          description: errorMsg,
-          variant: "destructive",
-        });
-        setError(errorMsg);
-        return null;
-      }
-
-      // Préparer les données à insérer avec les champs requis explicitement définis
-      const newTicket = {
-        title: ticketData.title,
-        type: ticketData.type,
-        created_by: user.id,
-        status: ticketData.status || "En attente",
-        description: ticketData.description || null,
-        priority: ticketData.priority || null,
-        assigned_to: ticketData.assigned_to || null,
-        form_data: ticketData.form_data || null
-      };
-
-      console.log("Creating ticket with data:", newTicket);
-
-      const { data, error } = await supabase
-        .from('tickets')
-        .insert(newTicket)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Erreur lors de la création du ticket:", error);
-        setError(error.message);
-        toast({
-          title: "Erreur",
-          description: `Impossible de créer le ticket: ${error.message}`,
-          variant: "destructive",
-        });
-        return null;
-      }
-
-      toast({
-        title: "Succès",
-        description: "Le ticket a été créé avec succès",
-      });
-
-      return data;
+      return await fetchTicketsByGroupId(groupId);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-      console.error("Erreur lors de la création du ticket:", errorMessage);
-      setError(errorMessage);
-      toast({
-        title: "Erreur",
-        description: `Une erreur est survenue: ${errorMessage}`,
-        variant: "destructive",
-      });
-      return null;
-    } finally {
-      setIsLoading(false);
+      console.error('Error fetching tickets by group:', error);
+      return [];
     }
   };
 
-  const updateTicket = async (id: string, ticketData: Partial<Ticket>): Promise<Ticket | null> => {
-    try {
+  const createTicketMutation = useMutation({
+    mutationFn: async (ticket: Partial<Ticket>): Promise<Ticket | null> => {
       setIsLoading(true);
       setError(null);
-      
-      if (!user) return null;
+      try {
+        const user = supabase.auth.getUser();
+        const userId = (await user).data.user?.id;
 
-      const { data, error } = await supabase
-        .from('tickets')
-        .update({
-          ...ticketData,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .select()
-        .single();
+        if (!userId) {
+          throw new Error("Utilisateur non connecté");
+        }
 
-      if (error) {
-        console.error("Erreur lors de la mise à jour du ticket:", error);
-        setError(error.message);
-        toast({
-          title: "Erreur",
-          description: "Impossible de mettre à jour le ticket. Veuillez réessayer plus tard.",
-          variant: "destructive",
-        });
-        return null;
+        const { data, error } = await supabase
+          .from('tickets')
+          .insert({
+            ...ticket,
+            created_by: userId
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        setError(error as Error);
+        throw error;
+      } finally {
+        setIsLoading(false);
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    },
+  });
 
-      toast({
-        title: "Succès",
-        description: "Le ticket a été mis à jour avec succès",
-      });
+  const updateTicketMutation = useMutation({
+    mutationFn: async ({ id, ticket }: { id: string; ticket: Partial<Ticket> }): Promise<Ticket | null> => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { data, error } = await supabase
+          .from('tickets')
+          .update(ticket)
+          .eq('id', id)
+          .select()
+          .single();
 
-      return data;
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        setError(error as Error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    },
+  });
+
+  const deleteTicketMutation = useMutation({
+    mutationFn: async (id: string): Promise<void> => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { error } = await supabase
+          .from('tickets')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+      } catch (error) {
+        setError(error as Error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    },
+  });
+
+  const createTicket = async (ticket: Partial<Ticket>): Promise<Ticket | null> => {
+    try {
+      return await createTicketMutation.mutateAsync(ticket);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-      console.error("Erreur:", errorMessage);
-      setError(errorMessage);
+      console.error('Error creating ticket:', error);
       return null;
-    } finally {
-      setIsLoading(false);
+    }
+  };
+
+  const updateTicket = async (id: string, ticket: Partial<Ticket>): Promise<Ticket | null> => {
+    try {
+      return await updateTicketMutation.mutateAsync({ id, ticket });
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+      return null;
     }
   };
 
   const deleteTicket = async (id: string): Promise<boolean> => {
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      if (!user) return false;
-
-      const { error } = await supabase
-        .from('tickets')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error("Erreur lors de la suppression du ticket:", error);
-        setError(error.message);
-        toast({
-          title: "Erreur",
-          description: "Impossible de supprimer le ticket. Veuillez réessayer plus tard.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      toast({
-        title: "Succès",
-        description: "Le ticket a été supprimé avec succès",
-      });
-
+      await deleteTicketMutation.mutateAsync(id);
       return true;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-      console.error("Erreur:", errorMessage);
-      setError(errorMessage);
+      console.error('Error deleting ticket:', error);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return {
-    isLoading,
-    error,
-    getTickets,
+    tickets,
     getTicketById,
+    getTicketsByGroupId,
     createTicket,
     updateTicket,
     deleteTicket,
+    isLoading: isLoading || isLoadingTickets,
+    error,
   };
-};
+}

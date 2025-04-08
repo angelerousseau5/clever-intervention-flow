@@ -17,13 +17,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -31,7 +24,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useTickets, Ticket } from "@/hooks/useTickets";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Plus, X, Trash2, PlusCircle, Move, ArrowUp, ArrowDown, Save, Edit } from "lucide-react";
+import { Plus, X, Trash2, PlusCircle, Move, Save } from "lucide-react";
 import { 
   ResizablePanelGroup, 
   ResizablePanel, 
@@ -44,42 +37,34 @@ import { CustomFormFields } from "@/components/intervention/CustomFormFields";
 import { SubmitFormSection } from "@/components/intervention/SubmitFormSection";
 import { CustomField } from "@/types/formTypes";
 
-const baseSchema = {
+const formSchema = z.object({
   title: z.string().min(2, "Le titre doit contenir au moins 2 caractères"),
   description: z.string().min(10, "La description doit contenir au moins 10 caractères"),
   status: z.string().default("En attente"),
-  type: z.string().min(1, "Le type est requis"),
-};
+  group_id: z.string().optional(),
+});
 
-type FieldConfigItem = {
-  id: string;
-  enabled: boolean;
-  label: string;
-  originalName: string;
-};
+type FormValues = z.infer<typeof formSchema>;
 
 const CreateTicket = () => {
   const { createTicket, updateTicket, getTicketById, isLoading } = useTickets();
   const navigate = useNavigate();
   const location = useLocation();
-  const [customTypeInput, setCustomTypeInput] = useState("");
-  const [customTypes, setCustomTypes] = useState<string[]>([]);
-  const [showCustomTypeInput, setShowCustomTypeInput] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentTicketId, setCurrentTicketId] = useState<string | null>(null);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [formSubmitted, setFormSubmitted] = useState(false);
-  
-  const [fieldConfig, setFieldConfig] = useState<FieldConfigItem[]>([
-    { id: "type", enabled: true, label: "Type", originalName: "type" },
-    { id: "priority", enabled: true, label: "Priorité", originalName: "priority" },
-    { id: "assigned_to", enabled: true, label: "Technicien assigné", originalName: "assigned_to" },
-  ]);
+  const [groupId, setGroupId] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const editId = params.get('edit');
+    const group = params.get('group');
+    
+    if (group) {
+      setGroupId(group);
+    }
     
     if (editId) {
       setIsEditing(true);
@@ -96,16 +81,8 @@ const CreateTicket = () => {
         title: ticket.title,
         description: ticket.description || "",
         status: ticket.status,
-        type: ticket.type,
+        group_id: ticket.group_id || "",
       };
-      
-      if (ticket.priority) {
-        formDefaultValues.priority = ticket.priority;
-      }
-      
-      if (ticket.assigned_to) {
-        formDefaultValues.assigned_to = ticket.assigned_to;
-      }
       
       form.reset(formDefaultValues);
       
@@ -128,40 +105,21 @@ const CreateTicket = () => {
     }
   };
 
-  const buildFormSchema = () => {
-    let schemaObj: Record<string, any> = {};
-    
-    schemaObj.title = z.string().min(2, "Le titre doit contenir au moins 2 caractères");
-    schemaObj.description = z.string().min(10, "La description doit contenir au moins 10 caractères");
-    schemaObj.status = z.string().default("En attente");
-    schemaObj.type = z.string().min(1, "Le type est requis");
-    
-    fieldConfig.forEach(field => {
-      if (field.enabled && field.originalName !== "type") {
-        schemaObj[field.originalName] = z.string().optional();
-      }
-    });
-    
-    return z.object(schemaObj);
-  };
-
-  const formSchema = buildFormSchema();
-  type FormValues = z.infer<typeof formSchema>;
-
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       description: "",
       status: "En attente",
-      type: "",
+      group_id: groupId,
     },
   });
 
   useEffect(() => {
-    const currentValues = form.getValues();
-    form.reset(currentValues);
-  }, [fieldConfig]);
+    if (groupId) {
+      form.setValue("group_id", groupId);
+    }
+  }, [groupId, form]);
 
   const handleInputChange = (name: string, value: string) => {
     setFormValues(prev => ({ ...prev, [name]: value }));
@@ -172,18 +130,6 @@ const CreateTicket = () => {
       toast({
         title: "Erreur",
         description: "Le titre est requis",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Vérifier si au moins le titre est renseigné
-    // On ne vérifie plus le type s'il est désactivé
-    const typeField = fieldConfig.find(field => field.id === "type");
-    if (typeField?.enabled && !values.type) {
-      toast({
-        title: "Erreur",
-        description: "Le type est requis lorsqu'il est activé",
         variant: "destructive",
       });
       return;
@@ -200,28 +146,9 @@ const CreateTicket = () => {
         title: values.title,
         description: values.description,
         status: values.status,
-        form_data: JSON.stringify(formData)
+        form_data: JSON.stringify(formData),
+        group_id: values.group_id,
       };
-      
-      // Ajouter les champs prédéfinis seulement s'ils sont activés
-      fieldConfig.forEach(field => {
-        if (field.enabled) {
-          const fieldValue = values[field.originalName as keyof FormValues];
-          if (fieldValue) {
-            ticketData[field.originalName] = fieldValue;
-          } else {
-            ticketData[field.originalName] = null;
-          }
-        } else {
-          // Si le champ est désactivé, on envoie null
-          ticketData[field.originalName] = null;
-        }
-      });
-      
-      // Si le type est désactivé, utiliser une valeur par défaut pour éviter les erreurs côté serveur
-      if (!typeField?.enabled) {
-        ticketData.type = "undefined";
-      }
       
       console.log("Données à soumettre:", ticketData);
       
@@ -243,14 +170,6 @@ const CreateTicket = () => {
         description: "Une erreur est survenue lors de la soumission du formulaire",
         variant: "destructive",
       });
-    }
-  };
-
-  const addCustomType = () => {
-    if (customTypeInput.trim()) {
-      setCustomTypes([...customTypes, customTypeInput.trim()]);
-      setCustomTypeInput("");
-      setShowCustomTypeInput(false);
     }
   };
 
@@ -282,34 +201,14 @@ const CreateTicket = () => {
     }
   };
 
-  const toggleField = (id: string) => {
-    setFieldConfig(
-      fieldConfig.map(field => 
+  const updateFieldLabel = (id: string, value: string) => {
+    setCustomFields(
+      customFields.map(field => 
         field.id === id 
-          ? { ...field, enabled: !field.enabled }
+          ? { ...field, label: value }
           : field
       )
     );
-  };
-
-  const updateFieldLabel = (id: string, value: string) => {
-    if (id.startsWith('custom_')) {
-      setCustomFields(
-        customFields.map(field => 
-          field.id === id 
-            ? { ...field, label: value }
-            : field
-        )
-      );
-    } else {
-      setFieldConfig(
-        fieldConfig.map(field => 
-          field.id === id 
-            ? { ...field, label: value }
-            : field
-        )
-      );
-    }
   };
 
   const moveFieldUp = (index: number) => {
@@ -413,110 +312,16 @@ const CreateTicket = () => {
                       )}
                     />
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {fieldConfig.find(f => f.id === "type" && f.enabled) && (
-                        <FormField
-                          control={form.control}
-                          name="type"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{fieldConfig.find(f => f.id === "type")?.label}</FormLabel>
-                              <div className="space-y-2">
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Sélectionnez ou créez un type" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="undefined">À définir par le technicien</SelectItem>
-                                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                                    <SelectItem value="installation">Installation</SelectItem>
-                                    <SelectItem value="depannage">Dépannage</SelectItem>
-                                    {customTypes.map(type => (
-                                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                                    ))}
-                                    <SelectItem value="custom" onClick={() => setShowCustomTypeInput(true)}>
-                                      + Ajouter un nouveau type
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                
-                                {showCustomTypeInput && (
-                                  <div className="flex items-center mt-2 space-x-2">
-                                    <Input
-                                      value={customTypeInput}
-                                      onChange={(e) => setCustomTypeInput(e.target.value)}
-                                      placeholder="Nom du nouveau type"
-                                      className="flex-1"
-                                    />
-                                    <Button type="button" size="sm" onClick={addCustomType}>
-                                      Ajouter
-                                    </Button>
-                                    <Button 
-                                      type="button" 
-                                      size="sm" 
-                                      variant="ghost" 
-                                      onClick={() => setShowCustomTypeInput(false)}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
-
-                      {fieldConfig.find(f => f.id === "priority" && f.enabled) && (
-                        <FormField
-                          control={form.control}
-                          name="priority"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{fieldConfig.find(f => f.id === "priority")?.label}</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || ""}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Sélectionnez une priorité" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="low">Basse</SelectItem>
-                                  <SelectItem value="medium">Moyenne</SelectItem>
-                                  <SelectItem value="high">Haute</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
-                    </div>
-
-                    {fieldConfig.find(f => f.id === "assigned_to" && f.enabled) && (
+                    {groupId && (
                       <FormField
                         control={form.control}
-                        name="assigned_to"
+                        name="group_id"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{fieldConfig.find(f => f.id === "assigned_to")?.label}</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Sélectionnez un technicien" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="undefined">À définir</SelectItem>
-                                <SelectItem value="Jean Martin">Jean Martin</SelectItem>
-                                <SelectItem value="Sophie Dubois">Sophie Dubois</SelectItem>
-                                <SelectItem value="Pierre Durand">Pierre Durand</SelectItem>
-                                <SelectItem value="self">Moi-même</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormLabel>Groupe</FormLabel>
+                            <FormControl>
+                              <Input readOnly {...field} />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -581,39 +386,7 @@ const CreateTicket = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Champs prédéfinis</h3>
-                  
-                  {fieldConfig.map(field => (
-                    <div key={field.id} className="flex flex-col space-y-2 p-3 border rounded-md">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Switch 
-                            id={`toggle-${field.id}`}
-                            checked={field.enabled}
-                            onCheckedChange={() => toggleField(field.id)}
-                          />
-                          <Label htmlFor={`toggle-${field.id}`}>{field.label}</Label>
-                        </div>
-                      </div>
-                      
-                      {field.enabled && (
-                        <div className="flex items-center mt-2">
-                          <Label className="w-20 text-sm">Libellé:</Label>
-                          <Input
-                            value={field.label}
-                            onChange={(e) => updateFieldLabel(field.id, e.target.value)}
-                            className="flex-1 h-8 text-sm"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-medium">Ajouter des champs pour le technicien</h3>
-                  </div>
+                  <h3 className="text-sm font-medium">Ajouter des champs pour le technicien</h3>
                   
                   <div className="flex flex-wrap gap-2">
                     <Button 
