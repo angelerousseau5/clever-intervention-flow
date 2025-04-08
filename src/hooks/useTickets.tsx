@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,22 +18,10 @@ export interface Ticket {
   group_id: string | null;
 }
 
-// Define the type for Supabase ticket response with explicit properties
-// to avoid deep type inference issues
-interface SupabaseTicket {
-  id: string;
-  title: string;
-  description: string | null;
-  status: string;
-  type: string | null;
-  priority: string | null;
-  assigned_to: string | null;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  form_data: string | null;
+// Define type for DB ticket with optional group_id to match database structure
+type TicketRow = Database['public']['Tables']['tickets']['Row'] & {
   group_id?: string | null;
-}
+};
 
 export function useTickets() {
   const queryClient = useQueryClient();
@@ -49,11 +36,8 @@ export function useTickets() {
 
     if (error) throw error;
     
-    // Explicitly cast the data to SupabaseTicket[] to avoid type inference issues
-    const typedData = data as SupabaseTicket[];
-    
-    // Map the data to ensure all required Ticket properties are included
-    return (typedData || []).map((ticket) => ({
+    // Convert data to Ticket type, handling the possible undefined group_id
+    return (data || []).map((ticket: any) => ({
       ...ticket,
       group_id: ticket.group_id || null
     } as Ticket));
@@ -68,11 +52,8 @@ export function useTickets() {
 
     if (error) throw error;
     
-    // Explicitly cast the data to SupabaseTicket[] to avoid type inference issues
-    const typedData = data as SupabaseTicket[];
-    
-    // Map the data to ensure all required Ticket properties are included
-    return (typedData || []).map((ticket) => ({
+    // Convert data to Ticket type
+    return (data || []).map((ticket: any) => ({
       ...ticket,
       group_id: ticket.group_id || null
     } as Ticket));
@@ -95,12 +76,9 @@ export function useTickets() {
 
       if (error) throw error;
       
-      // Explicitly cast the data to SupabaseTicket to avoid type issues
-      const typedData = data as SupabaseTicket;
-      
       return {
-        ...typedData,
-        group_id: typedData.group_id || null
+        ...data,
+        group_id: (data as any).group_id || null
       } as Ticket;
     } catch (error) {
       setError(error as Error);
@@ -141,8 +119,8 @@ export function useTickets() {
           ticket.type = "Non spécifié";
         }
 
-        // Create insert object with required fields 
-        const insertData: Record<string, any> = {
+        // Create the basic ticket data
+        const ticketData: any = {
           created_by: userId,
           title: ticket.title,
           type: ticket.type,
@@ -153,25 +131,22 @@ export function useTickets() {
           form_data: ticket.form_data,
         };
         
-        // Add group_id to insertData if it exists
+        // Add group_id if it exists
         if (ticket.group_id) {
-          insertData.group_id = ticket.group_id;
+          ticketData.group_id = ticket.group_id;
         }
 
         const { data, error } = await supabase
           .from('tickets')
-          .insert(insertData)
+          .insert(ticketData)
           .select()
           .single();
 
         if (error) throw error;
         
-        // Explicitly cast the data to SupabaseTicket to avoid type issues
-        const typedData = data as SupabaseTicket;
-        
         return {
-          ...typedData,
-          group_id: typedData.group_id || null
+          ...data,
+          group_id: (data as any).group_id || null
         } as Ticket;
       } catch (error) {
         setError(error as Error);
