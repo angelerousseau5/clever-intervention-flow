@@ -100,12 +100,17 @@ export function useTickets() {
           ticket.type = "Non spécifié";
         }
 
+        // Create insert object with required fields 
+        const insertData = {
+          ...ticket,
+          created_by: userId,
+          title: ticket.title,
+          type: ticket.type
+        };
+
         const { data, error } = await supabase
           .from('tickets')
-          .insert({
-            ...ticket,
-            created_by: userId
-          })
+          .insert(insertData)
           .select()
           .single();
 
@@ -200,7 +205,6 @@ export function useTickets() {
     }
   };
 
-  // Add getTickets function that was missing
   const getTickets = async (): Promise<Ticket[]> => {
     try {
       return await fetchTickets();
@@ -212,7 +216,7 @@ export function useTickets() {
 
   return {
     tickets,
-    getTickets, // Add the exported getTickets function
+    getTickets,
     getTicketById,
     getTicketsByGroupId,
     createTicket,
