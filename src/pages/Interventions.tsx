@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Trash2, Eye, Edit } from "lucide-react";
+import { FileText, Download, Trash2, Eye, Edit, Info } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { useTickets, Ticket } from "@/hooks/useTickets";
 import { Link, useNavigate } from "react-router-dom";
@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
@@ -219,7 +220,21 @@ const Interventions = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Référence</TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      Référence
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">Les techniciens peuvent accéder au formulaire avec les 8 premiers caractères</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </TableHead>
                   <TableHead>Titre</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Type</TableHead>
@@ -234,7 +249,19 @@ const Interventions = () => {
                   const formStatus = getFormStatus(intervention);
                   return (
                     <TableRow key={intervention.id}>
-                      <TableCell>{intervention.id.slice(0, 8)}</TableCell>
+                      <TableCell className="font-mono">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help">{intervention.id.slice(0, 8)}</span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>ID complet : {intervention.id}</p>
+                              <p className="text-xs text-muted-foreground mt-1">Les techniciens n'ont besoin que des 8 premiers caractères</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableCell>
                       <TableCell>{intervention.title}</TableCell>
                       <TableCell>{new Date(intervention.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>{intervention.type}</TableCell>

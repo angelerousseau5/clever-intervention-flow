@@ -1,13 +1,13 @@
-
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle, AlertCircle, Plus } from "lucide-react";
+import { FileText, CheckCircle, AlertCircle, Plus, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { useTickets, Ticket } from "@/hooks/useTickets";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Dashboard = () => {
   const { getTickets, isLoading, error } = useTickets();
@@ -27,7 +27,6 @@ const Dashboard = () => {
       const data = await getTickets();
       setTickets(data);
       
-      // Calculer les statistiques
       const completed = data.filter(ticket => ticket.status === "Terminé").length;
       setStats({
         total: data.length,
@@ -52,7 +51,6 @@ const Dashboard = () => {
     }
   }, [user, fetchTickets, hasFetched]);
 
-  // Statistiques pour le tableau de bord
   const statsItems = [
     {
       title: "Total Interventions",
@@ -90,7 +88,6 @@ const Dashboard = () => {
           </Link>
         </div>
 
-        {/* Stats cards */}
         <div className="grid gap-4 md:grid-cols-3">
           {statsItems.map((stat) => (
             <Card key={stat.title}>
@@ -111,10 +108,21 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Recent interventions */}
         <Card>
           <CardHeader>
-            <CardTitle>Interventions récentes</CardTitle>
+            <CardTitle className="flex items-center">
+              Interventions récentes
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 ml-2 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Les techniciens peuvent accéder au formulaire avec les 8 premiers caractères</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -149,7 +157,21 @@ const Dashboard = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-2">Référence</th>
+                      <th className="text-left py-3 px-2">
+                        <div className="flex items-center">
+                          Référence
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="h-3 w-3 ml-1 text-muted-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Les 8 premiers caractères suffisent pour l'accès technicien</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </th>
                       <th className="text-left py-3 px-2">Titre</th>
                       <th className="text-left py-3 px-2">Date</th>
                       <th className="text-left py-3 px-2">Technicien</th>
@@ -160,7 +182,18 @@ const Dashboard = () => {
                   <tbody>
                     {tickets.slice(0, 3).map((ticket) => (
                       <tr key={ticket.id} className="border-b">
-                        <td className="py-3 px-2 font-medium">{ticket.id.slice(0, 8)}</td>
+                        <td className="py-3 px-2 font-mono font-medium">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="cursor-help">{ticket.id.slice(0, 8)}</span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>ID complet : {ticket.id}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </td>
                         <td className="py-3 px-2">{ticket.title}</td>
                         <td className="py-3 px-2">{new Date(ticket.created_at).toLocaleDateString()}</td>
                         <td className="py-3 px-2">{ticket.assigned_to || "Non assigné"}</td>

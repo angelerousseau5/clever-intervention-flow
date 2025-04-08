@@ -29,14 +29,33 @@ const InterventionAccess = () => {
     setIsLoading(true);
     
     try {
-      // Verify ticket existence
-      const { data: ticket, error } = await supabase
-        .from('tickets')
-        .select('*')
-        .eq('id', formData.ticketNumber)
-        .single();
+      // Si le code saisi contient moins de 36 caractères (UUID complet), 
+      // on recherche les tickets dont l'ID commence par ce code
+      const searchValue = formData.ticketNumber.trim();
       
-      if (error || !ticket) {
+      let query = supabase.from('tickets').select('*');
+      
+      // Si nous avons un UUID complet (36 caractères)
+      if (searchValue.length === 36) {
+        query = query.eq('id', searchValue);
+      } 
+      // Si nous avons les 8 premiers caractères ou plus
+      else if (searchValue.length >= 8) {
+        // Utilisation d'une requête ILIKE avec le préfixe du ticket
+        query = query.ilike('id', `${searchValue}%`);
+      } else {
+        toast({
+          title: "Format invalide",
+          description: "Veuillez saisir au moins 8 caractères du numéro de ticket.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      const { data: tickets, error } = await query;
+      
+      if (error || !tickets || tickets.length === 0) {
         toast({
           title: "Formulaire non trouvé",
           description: "Veuillez vérifier le numéro de ticket saisi.",
@@ -46,12 +65,15 @@ const InterventionAccess = () => {
         return;
       }
       
+      // Si plusieurs tickets correspondent, prendre le premier
+      const ticket = tickets[0];
+      
       // Success - store access info and redirect to view form
       localStorage.setItem('interventionAccess', JSON.stringify({
         firstName: formData.firstName,
         lastName: formData.lastName,
         companyName: formData.companyName,
-        ticketId: formData.ticketNumber,
+        ticketId: ticket.id,
         accessedAt: new Date().toISOString()
       }));
       
@@ -63,10 +85,10 @@ const InterventionAccess = () => {
             status: "En cours",
             updated_at: new Date().toISOString()
           })
-          .eq('id', formData.ticketNumber);
+          .eq('id', ticket.id);
       }
       
-      navigate(`/intervention-form/${formData.ticketNumber}`);
+      navigate(`/intervention-form/${ticket.id}`);
     } catch (error) {
       console.error("Erreur lors de la vérification du ticket:", error);
       toast({
@@ -138,9 +160,13 @@ const InterventionAccess = () => {
                 name="ticketNumber"
                 value={formData.ticketNumber}
                 onChange={handleChange}
-                placeholder="INT-12345"
+                placeholder="878f9259"
                 required
+                minLength={8}
               />
+              <p className="text-xs text-muted-foreground">
+                Entrez au moins les 8 premiers caractères de l'identifiant du ticket
+              </p>
             </div>
 
             <Button
