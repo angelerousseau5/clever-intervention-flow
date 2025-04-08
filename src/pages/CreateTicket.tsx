@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -167,10 +168,22 @@ const CreateTicket = () => {
   };
 
   const onSubmit = async (values: FormValues) => {
-    if (!values.title || !values.type) {
+    if (!values.title) {
       toast({
         title: "Erreur",
-        description: "Le titre et le type sont requis",
+        description: "Le titre est requis",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Vérifier si au moins le titre est renseigné
+    // On ne vérifie plus le type s'il est désactivé
+    const typeField = fieldConfig.find(field => field.id === "type");
+    if (typeField?.enabled && !values.type) {
+      toast({
+        title: "Erreur",
+        description: "Le type est requis lorsqu'il est activé",
         variant: "destructive",
       });
       return;
@@ -187,20 +200,28 @@ const CreateTicket = () => {
         title: values.title,
         description: values.description,
         status: values.status,
-        type: values.type,
         form_data: JSON.stringify(formData)
       };
       
+      // Ajouter les champs prédéfinis seulement s'ils sont activés
       fieldConfig.forEach(field => {
-        if (field.enabled && field.originalName !== "type") {
+        if (field.enabled) {
           const fieldValue = values[field.originalName as keyof FormValues];
           if (fieldValue) {
             ticketData[field.originalName] = fieldValue;
           } else {
             ticketData[field.originalName] = null;
           }
+        } else {
+          // Si le champ est désactivé, on envoie null
+          ticketData[field.originalName] = null;
         }
       });
+      
+      // Si le type est désactivé, utiliser une valeur par défaut pour éviter les erreurs côté serveur
+      if (!typeField?.enabled) {
+        ticketData.type = "undefined";
+      }
       
       console.log("Données à soumettre:", ticketData);
       
@@ -251,6 +272,14 @@ const CreateTicket = () => {
 
   const removeCustomField = (id: string) => {
     setCustomFields(customFields.filter(field => field.id !== id));
+    
+    // Supprimer également les valeurs associées à ce champ
+    const fieldToRemove = customFields.find(field => field.id === id);
+    if (fieldToRemove) {
+      const newFormValues = { ...formValues };
+      delete newFormValues[fieldToRemove.name];
+      setFormValues(newFormValues);
+    }
   };
 
   const toggleField = (id: string) => {
